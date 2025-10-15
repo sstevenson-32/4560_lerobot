@@ -2,7 +2,7 @@ import time
 from so101_utils import load_calibration, move_to_pose, hold_position, setup_motors
 
 # CONFIGURATION VARIABLES
-PORT_ID = "COM11"
+PORT_ID = "COM6"
 ROBOT_NAME = "follower-1"
 
 # --- Specified Parameters ---
