@@ -1,0 +1,67 @@
+import numpy as np
+import so101_forward_kinematics
+
+def get_inverse_kinematics(target_position, target_orientation):
+    "Geometric appraoch specific to the so-101 arms"
+
+    # 1) Parse destination coordinates and combine to a single target matrix
+    x_dest = target_position[0]
+    y_dest = target_position[1]
+    z_dest = target_position[2]
+
+    # 2) Solve for theta_1 (top view), what will get wrist directly above cube
+    theta_1 = -np.atan((x_dest) / (y_dest - (0.0388353)))
+    theta_1 = np.rad2deg(theta_1)
+
+    # 3) Get and parse target wrist position
+    target_wrist_position = get_wrist_flex_position(target_position)
+    x_wrist = target_wrist_position[0][0]
+    y_wrist = target_wrist_position[0][1]
+    z_wrist = target_wrist_position[0][2]
+
+    x_target = np.sqrt(np.square(x_wrist - 0.0388353 - 0.0303992*np.cos(-theta_1)) + np.square(y_wrist - 0.0303992*np.sin(-theta_1)))
+    z_target = z_wrist - (0.0624 + 0.0542)
+
+    l_1 = 0.11257
+    l_2 = 0.1349
+
+    # 4) Solve for theta_2 and theta_3 (side view)
+    alpha = np.acos((np.square(x_target) + np.square(z_target) + l_1*l_1 - l_2*l_2) / (2 * l_1 * np.sqrt(np.square(x_target) + np.square(z_target))))
+    beta = np.acos((l_1*l_1 + l_2*l_2 - (np.square(x_target) + np.square(z_target))) / (2 * l_1 * l_2))
+    gamma = np.atan2(z_target, x_target)
+
+    theta_2 = np.rad2deg(gamma - alpha)
+    theta_3 = np.rad2deg(np.pi - beta)
+
+    # 5) Solve for theta_4
+    theta_4 = 90 - theta_2 - theta_3
+
+    # 6) Solve for theta_5
+    theta_5 = -theta_1
+
+    print(f"theta_1: {theta_1:.2f}, theta_2: {theta_2:.2f}, theta_3: {theta_3:.2f}, theta_4: {theta_4:.2f}, theta_5: {theta_5:.2f}")
+
+    # Initialize the joint configuration dictionary
+    joint_config = {
+        'shoulder_pan': theta_1,
+        'shoulder_lift': theta_2,
+        'elbow_flex': theta_3,
+        'wrist_flex': theta_4,
+        'wrist_roll': theta_5,
+        'gripper': 0.0
+    }
+
+    return joint_config
+
+# Given target location, solve for position of wrist frame
+# Assuming we want wrist frame directly above target position
+def get_wrist_flex_position(target_position):
+    # Ensure configuration, rotated about y 90 degrees, is accounted for
+    gwt = np.block([[so101_forward_kinematics.Ry(90), np.array(target_position).reshape(3,1)], [0, 0, 0, 1]])
+    g4t = so101_forward_kinematics.get_g45(0) @ so101_forward_kinematics.get_g5t()
+
+    gw4 = gwt @ np.linalg.inv(g4t)
+    wrist_flex_position = gw4[0:3, 3]
+    wrist_flex_orientation = gw4[0:3, 0:3]
+
+    return wrist_flex_position, wrist_flex_orientation
