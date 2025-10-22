@@ -8,6 +8,7 @@ def get_inverse_kinematics(target_position, target_orientation):
     x_dest = target_position[0]
     y_dest = target_position[1]
     z_dest = target_position[2]
+    print(f"x_dest: {x_dest:.3f}, y_dest: {y_dest:.3f}, z_dest: {z_dest:.3f}")
 
     # 2) Solve for theta_1 (top view), what will get wrist directly above cube
     # theta_1 = np.rad2deg( -np.atan( x_dest / (y_dest - 0.038835) ) )
@@ -19,35 +20,47 @@ def get_inverse_kinematics(target_position, target_orientation):
     y_wrist = target_wrist_position[0][1]
     z_wrist = target_wrist_position[0][2]
 
-    # target_dist = so101_forward_kinematics.get_gw1(theta_1) @ so101_forward_kinematics.get_g12(0) @ so101_forward_kinematics.get_g23(0)
-
     g_w2 = so101_forward_kinematics.get_gw1(theta_1) @ so101_forward_kinematics.get_g12(0)
     g_w2_d = g_w2[0:3, 3]
+    print(f"x_offset: {g_w2_d[0]}, y_offset: {g_w2_d[1]}")
+    print(f"x_target: {(x_wrist - g_w2_d[0]):.3f}, y_target: {(y_wrist - g_w2_d[1]):.3f}")
 
-    x_target = np.sqrt( np.square(x_wrist - g_w2_d[0]) + np.square(y_wrist - g_w2_d[1]) )
+    dist_target = np.sqrt( np.square(x_wrist - g_w2_d[0]) + np.square(y_wrist - g_w2_d[1]) )
     z_target = z_wrist - g_w2_d[2]
+    print(f"dist_target: {dist_target:.3f}, z_target: {z_target:.3f}")
 
     l_1 = 0.11257
     l_2 = 0.1349
 
     # 4) Solve for theta_2 and theta_3 (side view)
-    alpha = np.acos((np.square(x_target) + np.square(z_target) + l_1*l_1 - l_2*l_2) / (2 * l_1 * np.sqrt(np.square(x_target) + np.square(z_target))))
-    beta = np.acos((l_1*l_1 + l_2*l_2 - (np.square(x_target) + np.square(z_target))) / (2 * l_1 * l_2))
-    gamma = np.atan2(z_target, x_target)
+    alpha = np.acos( (np.square(dist_target) + np.square(z_target) + np.square(l_1) - np.square(l_2)) / (2 * l_1 * np.sqrt(np.square(dist_target) + np.square(z_target))) )
+    beta = np.acos( (np.square(l_1) + np.square(l_2) - np.square(dist_target) - np.square(z_target)) / (2 * l_1 * l_2) )
+    gamma = np.atan2(z_target, dist_target)
 
-    theta_2 = np.rad2deg(gamma - alpha)
-    # theta_3 = np.rad2deg(np.pi - beta)
+    # 5) Determine if we should use lefty or right orientation
+    theta_2 = np.rad2deg(gamma + alpha)
     theta_3 = np.rad2deg(beta - np.pi)
 
+    g_w4 = so101_forward_kinematics.get_gw1(theta_1) @ so101_forward_kinematics.get_g12(theta_2) @ so101_forward_kinematics.get_g23(theta_3) @ so101_forward_kinematics.get_g34(0)
+    g_w4_d = g_w4[0:3, 3]
+    if (g_w4_d[0] != x_wrist or g_w4_d[1] != y_wrist):
+        theta_2 = np.rad2deg(gamma - alpha)
+        theta_3 = np.rad2deg(np.pi - beta)
+
+
+    # theta_2 = np.rad2deg(gamma - alpha)
+    # theta_3 = np.rad2deg(np.pi - beta)
+
     # 5) Solve for theta_4
-    theta_4 = 90 - theta_2 - theta_3
+    theta_4 = 90 - (theta_2 + theta_3)
 
     # 6) Solve for theta_5
     theta_5 = -theta_1
 
-    theta_2 = 0
-    theta_3 = 0
-    theta_4 = 0
+    # theta_2 = 0
+    # theta_3 = 0
+    # theta_4 = 0
+    # theta_5 = 0
 
     print(f"theta_1: {theta_1:.2f}, theta_2: {theta_2:.2f}, theta_3: {theta_3:.2f}, theta_4: {theta_4:.2f}, theta_5: {theta_5:.2f}")
 
