@@ -10,8 +10,8 @@ def get_inverse_kinematics(target_position, target_orientation):
     z_dest = target_position[2]
 
     # 2) Solve for theta_1 (top view), what will get wrist directly above cube
-    theta_1 = -np.atan((x_dest) / (y_dest - (0.0388353)))
-    theta_1 = np.rad2deg(theta_1)
+    # theta_1 = np.rad2deg( -np.atan( x_dest / (y_dest - 0.038835) ) )
+    theta_1 = np.rad2deg( -np.atan( y_dest / (x_dest - 0.038835) ) )
 
     # 3) Get and parse target wrist position
     target_wrist_position = get_wrist_flex_position(target_position)
@@ -19,8 +19,13 @@ def get_inverse_kinematics(target_position, target_orientation):
     y_wrist = target_wrist_position[0][1]
     z_wrist = target_wrist_position[0][2]
 
-    x_target = np.sqrt(np.square(x_wrist - 0.0388353 - 0.0303992*np.cos(-theta_1)) + np.square(y_wrist - 0.0303992*np.sin(-theta_1)))
-    z_target = z_wrist - (0.0624 + 0.0542)
+    # target_dist = so101_forward_kinematics.get_gw1(theta_1) @ so101_forward_kinematics.get_g12(0) @ so101_forward_kinematics.get_g23(0)
+
+    g_w2 = so101_forward_kinematics.get_gw1(theta_1) @ so101_forward_kinematics.get_g12(0)
+    g_w2_d = g_w2[0:3, 3]
+
+    x_target = np.sqrt( np.square(x_wrist - g_w2_d[0]) + np.square(y_wrist - g_w2_d[1]) )
+    z_target = z_wrist - g_w2_d[2]
 
     l_1 = 0.11257
     l_2 = 0.1349
@@ -31,13 +36,18 @@ def get_inverse_kinematics(target_position, target_orientation):
     gamma = np.atan2(z_target, x_target)
 
     theta_2 = np.rad2deg(gamma - alpha)
-    theta_3 = np.rad2deg(np.pi - beta)
+    # theta_3 = np.rad2deg(np.pi - beta)
+    theta_3 = np.rad2deg(beta - np.pi)
 
     # 5) Solve for theta_4
     theta_4 = 90 - theta_2 - theta_3
 
     # 6) Solve for theta_5
     theta_5 = -theta_1
+
+    theta_2 = 0
+    theta_3 = 0
+    theta_4 = 0
 
     print(f"theta_1: {theta_1:.2f}, theta_2: {theta_2:.2f}, theta_3: {theta_3:.2f}, theta_4: {theta_4:.2f}, theta_5: {theta_5:.2f}")
 
