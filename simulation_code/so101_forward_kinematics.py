@@ -53,7 +53,7 @@ def get_g45(theta5_deg):
 
 def get_g5t():
     d = (0, 0, -0.1034)
-    R = Rz(-90) @ Ry(90)
+    R = Rx(90) @ Rz(-90)
     return np.block([[R, np.array(d).reshape(3,1)], [0, 0, 0, 1]])
 
 def get_forward_kinematics(position_dict):
