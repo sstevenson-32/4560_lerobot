@@ -11,7 +11,6 @@ def get_inverse_kinematics(target_position, target_orientation):
     # print(f"x_dest: {x_dest:.3f}, y_dest: {y_dest:.3f}, z_dest: {z_dest:.3f}")
 
     # 2) Solve for theta_1 (top view), what will get wrist directly above cube
-    # theta_1 = np.rad2deg( -np.atan( x_dest / (y_dest - 0.038835) ) )
     theta_1 = np.rad2deg( -np.atan( y_dest / (x_dest - 0.038835) ) )
 
     # 3) Get and parse target wrist position
