@@ -8,7 +8,7 @@ def get_inverse_kinematics(target_position, target_orientation):
     x_dest = target_position[0]
     y_dest = target_position[1]
     z_dest = target_position[2]
-    print(f"x_dest: {x_dest:.3f}, y_dest: {y_dest:.3f}, z_dest: {z_dest:.3f}")
+    # print(f"x_dest: {x_dest:.3f}, y_dest: {y_dest:.3f}, z_dest: {z_dest:.3f}")
 
     # 2) Solve for theta_1 (top view), what will get wrist directly above cube
     # theta_1 = np.rad2deg( -np.atan( x_dest / (y_dest - 0.038835) ) )
@@ -22,12 +22,12 @@ def get_inverse_kinematics(target_position, target_orientation):
 
     g_w2 = so101_forward_kinematics.get_gw1(theta_1) @ so101_forward_kinematics.get_g12(0)
     g_w2_d = g_w2[0:3, 3]
-    print(f"x_offset: {g_w2_d[0]}, y_offset: {g_w2_d[1]}")
-    print(f"x_target: {(x_wrist - g_w2_d[0]):.3f}, y_target: {(y_wrist - g_w2_d[1]):.3f}")
+    # print(f"x_offset: {g_w2_d[0]}, y_offset: {g_w2_d[1]}")
+    # print(f"x_target: {(x_wrist - g_w2_d[0]):.3f}, y_target: {(y_wrist - g_w2_d[1]):.3f}")
 
-    dist_target = np.sqrt( np.square(x_wrist - g_w2_d[0]) + np.square(y_wrist - g_w2_d[1]) )
+    dist_target = np.sqrt( np.square(x_wrist - g_w2_d[0]) + np.square(y_wrist - g_w2_d[1]) ) - 0.01
     z_target = z_wrist - g_w2_d[2]
-    print(f"dist_target: {dist_target:.3f}, z_target: {z_target:.3f}")
+    # print(f"dist_target: {dist_target:.3f}, z_target: {z_target:.3f}")
 
     l_1 = 0.11257
     l_2 = 0.1349
@@ -38,18 +38,8 @@ def get_inverse_kinematics(target_position, target_orientation):
     gamma = np.atan2(z_target, dist_target)
 
     # 5) Determine if we should use lefty or right orientation
-    theta_2 = np.rad2deg(gamma + alpha)
-    theta_3 = np.rad2deg(beta - np.pi)
-
-    g_w4 = so101_forward_kinematics.get_gw1(theta_1) @ so101_forward_kinematics.get_g12(theta_2) @ so101_forward_kinematics.get_g23(theta_3) @ so101_forward_kinematics.get_g34(0)
-    g_w4_d = g_w4[0:3, 3]
-    if (g_w4_d[0] != x_wrist or g_w4_d[1] != y_wrist):
-        theta_2 = np.rad2deg(gamma - alpha)
-        theta_3 = np.rad2deg(np.pi - beta)
-
-
-    # theta_2 = np.rad2deg(gamma - alpha)
-    # theta_3 = np.rad2deg(np.pi - beta)
+    theta_2 = np.rad2deg(np.pi/2 - (alpha + gamma))
+    theta_3 = np.rad2deg(np.pi/2 - beta)
 
     # 5) Solve for theta_4
     theta_4 = 90 - (theta_2 + theta_3)
@@ -57,12 +47,7 @@ def get_inverse_kinematics(target_position, target_orientation):
     # 6) Solve for theta_5
     theta_5 = -theta_1
 
-    # theta_2 = 0
-    # theta_3 = 0
-    # theta_4 = 0
-    # theta_5 = 0
-
-    print(f"theta_1: {theta_1:.2f}, theta_2: {theta_2:.2f}, theta_3: {theta_3:.2f}, theta_4: {theta_4:.2f}, theta_5: {theta_5:.2f}")
+    # print(f"theta_1: {theta_1:.2f}, theta_2: {theta_2:.2f}, theta_3: {theta_3:.2f}, theta_4: {theta_4:.2f}, theta_5: {theta_5:.2f}")
 
     # Initialize the joint configuration dictionary
     joint_config = {

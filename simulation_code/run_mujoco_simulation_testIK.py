@@ -79,8 +79,8 @@ def test_random_target():
                 # Add a cylinder as a site for visualization
                 show_cube(viewer, desired_position, desired_orientation)
 
-                target_wrist_position = get_wrist_flex_position(desired_position)
-                show_cube(viewer, target_wrist_position[0], np.eye(3))
+                # target_wrist_position = get_wrist_flex_position(desired_position)
+                # show_cube(viewer, target_wrist_position[0], np.eye(3))
                 
                 # Get the inverse kinematics solution
                 joint_configuration = get_inverse_kinematics(desired_position, desired_orientation)
