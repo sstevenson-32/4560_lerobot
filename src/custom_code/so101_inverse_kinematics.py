@@ -17,7 +17,7 @@ def get_inverse_kinematics(target_position, target_orientation=None):
     target_wrist_position = get_wrist_flex_position(target_position)
     x_wrist = target_wrist_position[0][0]
     y_wrist = target_wrist_position[0][1]
-    z_wrist = target_wrist_position[0][2]
+    z_wrist = target_wrist_position[0][2] - 0.02
 
     g_w2 = so101_forward_kinematics.get_gw1(theta_1) @ so101_forward_kinematics.get_g12(0)
     g_w2_d = g_w2[0:3, 3]
