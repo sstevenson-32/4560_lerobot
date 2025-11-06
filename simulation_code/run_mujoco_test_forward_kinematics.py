@@ -2,7 +2,7 @@ import time
 import mujoco
 import mujoco.viewer
 from so101_mujoco_utils import set_initial_pose, send_position_command, move_to_pose, hold_position
-from so101_forward_kinematics import get_forward_kinematics
+from so101_mujoco_forward_kinematics import get_forward_kinematics
 import numpy as np
 
 m = mujoco.MjModel.from_xml_path('model/scene.xml')
