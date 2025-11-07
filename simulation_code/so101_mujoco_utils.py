@@ -1,5 +1,7 @@
 import time
 import mujoco
+import numpy as np
+import math
 
 def convert_to_dictionary(qpos):
     return {
@@ -31,8 +33,6 @@ def send_position_command(d, position_dict):
     pos = convert_to_list(position_dict)
     d.ctrl = pos
 
-import mujoco
-
 def move_to_pose(m, d, viewer, desired_position, duration):
     start_time = time.time()
     starting_pose = d.qpos.copy()
@@ -59,7 +59,47 @@ def move_to_pose(m, d, viewer, desired_position, duration):
         
         # Pick up changes to the physics state, apply perturbations, update options from GUI.
         viewer.sync()
+
+def move_to_pose_cubic(m, d, viewer, _, desired_position, duration):
+    start_time = time.time()
+    starting_pose = d.qpos.copy()
+    starting_pose = convert_to_dictionary(starting_pose)
+
+    # Set cubic coefficients based on current position
+    a0 = starting_pose
+    a1 = {joint: 0 for joint in starting_pose}
+    a2 = {joint: ((3/math.pow(duration, 2)) * (desired_position[joint] - starting_pose[joint])) for joint in starting_pose}
+    a3 = {joint: ((2/math.pow(duration, 3)) * (starting_pose[joint] - desired_position[joint])) for joint in starting_pose}
+
+    # Create internal cubic interpolation helper
+    def cubic_interpolation(t, joint):
+        tlim = min(max(t, 0), duration)
+        pos = a0[joint] + a1[joint]*tlim + a2[joint]*(tlim**2) + a3[joint]*(tlim**3)
+        return pos
     
+    while True:
+        t = time.time() - start_time
+        if t > duration:
+            break
+
+        # Interpolation factor [0,1] (make sure it doesn't exceed 1)
+        alpha = min(t / duration, 1)
+
+        # Interpolate each joint
+        position_dict = {}
+        for joint in desired_position:
+            p0 = starting_pose[joint]
+            pf = desired_position[joint]
+            position_dict[joint] = cubic_interpolation(t, joint)
+
+        # Send command
+        send_position_command(d, position_dict)
+        mujoco.mj_step(m, d)
+        
+        # Pick up changes to the physics state, apply perturbations, update options from GUI.
+        viewer.sync()
+
+
 def hold_position(m, d, viewer, duration):
     current_pos = d.qpos.copy()
     current_pos_dict = convert_to_dictionary(current_pos)
