@@ -58,7 +58,7 @@ def test_basic():
 
 # Helper function to obtain random target position and yaw (rotation around the z-axis) from a given range 
 def get_random_position():
-    x_pos_range = [0.15, 0.3] #taken from workspace analysis
+    x_pos_range = [0.15, 0.25] #taken from workspace analysis
     y_pos_range = [-0.2, 0.2] #taken from workspace analysis
     yaw_range = [0, np.pi/2] #anything beyond 0 to 90 degrees is redundant due to symmetry of the cube
     x = np.random.uniform(x_pos_range[0], x_pos_range[1])

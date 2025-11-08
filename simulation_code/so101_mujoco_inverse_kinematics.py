@@ -2,7 +2,7 @@ import numpy as np
 import so101_mujoco_forward_kinematics as so101_mujoco_forward_kinematics
 
 def get_inverse_kinematics(target_position, target_orientation=None):
-    "Geometric appraoch specific to the so-101 arms"
+    "Geometric approach specific to the so-101 arms"
 
     # 1) Parse destination coordinates and combine to a single target matrix
     x_dest = target_position[0]
@@ -24,7 +24,7 @@ def get_inverse_kinematics(target_position, target_orientation=None):
     # print(f"x_offset: {g_w2_d[0]}, y_offset: {g_w2_d[1]}")
     # print(f"x_target: {(x_wrist - g_w2_d[0]):.3f}, y_target: {(y_wrist - g_w2_d[1]):.3f}")
 
-    dist_target = np.sqrt( np.square(x_wrist - g_w2_d[0]) + np.square(y_wrist - g_w2_d[1]) ) - 0.01
+    dist_target = np.sqrt( np.square(x_wrist - g_w2_d[0]) + np.square(y_wrist - g_w2_d[1]) )
     z_target = z_wrist - g_w2_d[2]
     # print(f"dist_target: {dist_target:.3f}, z_target: {z_target:.3f}")
 
