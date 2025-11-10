@@ -2,6 +2,7 @@ import time
 import mujoco
 import numpy as np
 import math
+from so101_mujoco_inverse_kinematics import get_inverse_kinematics
 
 def convert_to_dictionary(qpos):
     return {
@@ -112,3 +113,56 @@ def hold_position(m, d, viewer, duration):
         send_position_command(d, current_pos_dict)
         mujoco.mj_step(m, d)
         viewer.sync()
+
+
+def pick_up_block_cubic(m, d, viewer, block_position, move_to_duration):
+    # Move above block with gripper open
+    block_raised = block_position.copy()
+    block_raised[2] += 0.05  # raise block height amount
+    block_configuration_raised = get_inverse_kinematics(block_raised)
+    block_configuration_raised['gripper'] = 50
+    move_to_pose_cubic(m, d, viewer, None, block_configuration_raised, move_to_duration)
+    
+    # Move down to block with gripper open
+    block_configuration = get_inverse_kinematics(block_position)
+    block_configuration['gripper'] = 50
+    move_to_pose_cubic(m, d, viewer, None, block_configuration, 1.0)
+    
+    # Close gripper
+    block_configuration_closed = block_configuration.copy()
+    block_configuration_closed['gripper'] = 5
+    move_to_pose_cubic(m, d, viewer, None, block_configuration_closed, 1.0)
+
+    # Lift up again
+    block_configuration_raised['gripper'] = 5
+    move_to_pose_cubic(m, d, viewer, None, block_configuration_raised, move_to_duration)
+
+def place_block_cubic(m, d, viewer, target_position, move_to_duration):
+    
+    # Move above target with gripper closed
+    block_raised = target_position.copy()
+    block_raised[2] += 0.03  # raise 1 inch
+    block_configuration_raised = get_inverse_kinematics(block_raised)
+    block_configuration_raised['gripper'] = 5
+    move_to_pose_cubic(m, d, viewer, None, block_configuration_raised, move_to_duration)
+    
+    # Move down to block
+    block_configuration = get_inverse_kinematics(target_position)
+    block_configuration['gripper'] = 5
+    move_to_pose_cubic(m, d, viewer, None, block_configuration, 1.0)
+    
+    # Open gripper 
+    block_configuration_open = block_configuration.copy()
+    block_configuration_open['gripper'] = 50
+    move_to_pose_cubic(m, d, viewer, None, block_configuration_open, 1.0)
+    
+    # Return to raised position
+    block_configuration_raised['gripper'] = 50
+    move_to_pose_cubic(m, d, viewer, None, block_configuration_raised, move_to_duration)
+
+
+def throw_obj(m, d, viewer, target_position, target_joint_vel):
+    # At target_position, must be at target_joint_vel with gripper open
+    
+    # Add logic to set final_position to be past target_position
+    pass
