@@ -2,7 +2,7 @@ import time
 import mujoco
 import mujoco.viewer
 from so101_mujoco_utils import set_initial_pose, send_position_command, move_to_pose, hold_position, pick_up_block_cubic, throw_obj
-from so101_mujoco_inverse_kinematics import get_inverse_kinematics, get_throw_theta_1, get_throwing_velocity
+from so101_mujoco_inverse_kinematics import get_throw_theta_1, get_throwing_velocity, get_end_effector_inverse_kinematics
 import numpy as np
 
 m = mujoco.MjModel.from_xml_path('simulation_code/model/scene.xml')
@@ -46,8 +46,7 @@ def test_basic():
         show_cube(viewer, start_obj_position, np.eye(3))
 
         # 1) Pickup the target object
-        # joint_configuration = get_inverse_kinematics(start_obj_position, viewer)
-        pick_up_block_cubic(m, d, viewer, start_obj_position, 1.0)
+        # pick_up_block_cubic(m, d, viewer, start_obj_position, 1.0)
 
 
         # 2) Get to starting throwing position - Use theta to define rotation, all others are pre set
@@ -88,6 +87,20 @@ def test_basic():
 
         # move_to_pose(m, d, viewer, end_config, 1.0)
         # hold_position(m, d, viewer, 2.0)
+
+        # Test new IK
+        joint_config = get_end_effector_inverse_kinematics([0, 0, 0.3])
+        move_to_pose(m, d, viewer, joint_config, 2.0)
+
+        # THROW POINT: Causing errors
+        joint_config = get_end_effector_inverse_kinematics([1.31720722*10**-1, -2.79227353*10**-8,  4.69481449*10**-1])
+        move_to_pose(m, d, viewer, joint_config, 2.0)
+
+        joint_config = get_end_effector_inverse_kinematics([[2.21191747*10**-1, -5.48190523*10**-8,  4.27755268*10**-1]])
+        move_to_pose(m, d, viewer, joint_config, 2.0)
+
+        hold_position(m, d, viewer, 10)
+
 
         # Show a cube where the target is
         show_cube(viewer, desired_obj_position, np.eye(3))

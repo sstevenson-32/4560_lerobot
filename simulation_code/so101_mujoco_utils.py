@@ -187,15 +187,17 @@ def throw_obj(m, d, viewer, throw_velocity, throwing_pose, end_pose):
     }
 
     # Solve coefficients to get from p(0) to p(throw), with p_dot(0) = 0, p_dot(throw) = throw_velocity
-    start_point = get_forward_kinematics(starting_pose)[0]
-    throw_point = get_forward_kinematics(throwing_pose)[0]
+    start_point, start_rot = get_forward_kinematics(starting_pose)
+    throw_point, throw_rot = get_forward_kinematics(throwing_pose)
     throwing_coefficients = eval_coeff(start_point, throw_point, 0.0, throw_velocity, time_to_throw)
+    print(f"==================================================\n")
     print(f"start_point: {start_point}\nthrow_point: {throw_point}\nthrow_coeff: {throwing_coefficients}")
 
     # Solve coefficients to get from p(throw) to p(final), with p_dot(throw) = throw_velocity, p_dot(final) = 0
-    end_point = get_forward_kinematics(end_pose)[0]
-    stopping_coefficients = eval_coeff(throw_point, end_point, throw_velocity, 0.0, time_to_stop)
-    print(f"end_point: {end_point}\nstop_coeff: {stopping_coefficients}")
+    # end_point = get_forward_kinematics(end_pose)[0]
+    # stopping_coefficients = eval_coeff(throw_point, end_point, throw_velocity, 0.0, time_to_stop)
+    # print(f"end_point: {end_point}\nstop_coeff: {stopping_coefficients}")
+    print(f"\n==================================================")
 
     # Move to these positions
     while True:

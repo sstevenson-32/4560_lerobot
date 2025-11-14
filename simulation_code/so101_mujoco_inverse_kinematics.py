@@ -85,7 +85,7 @@ def get_end_effector_inverse_kinematics(target_position, target_orientation=None
     # print(f"dist_target: {dist_target:.3f}, z_target: {z_target:.3f}")
 
     l_1 = 0.11257
-    l_2 = 0.1349
+    l_2 = 0.1349 + 0.0611 + 0.1034  # Treat L2 as distance from {3} to {end effector}
 
     # 4) Solve for theta_2 and theta_3 (side view)
     delta = 0.24378689318
@@ -98,10 +98,12 @@ def get_end_effector_inverse_kinematics(target_position, target_orientation=None
     theta_3 = np.rad2deg(np.pi/2 - beta + delta)
 
     # 5) Solve for theta_4
-    theta_4 = 90 - (theta_2 + theta_3)
+    # theta_4 = 90 - (theta_2 + theta_3)
+    theta_4 = 0
 
     # 6) Solve for theta_5
-    theta_5 = -theta_1
+    # theta_5 = -theta_1
+    theta_5 = 0
 
     # print(f"theta_1: {theta_1:.2f}, theta_2: {theta_2:.2f}, theta_3: {theta_3:.2f}, theta_4: {theta_4:.2f}, theta_5: {theta_5:.2f}")
 
@@ -143,5 +145,5 @@ def get_throw_theta_1(target_position):
 
 # Throwing velocity, velocity in x, y, and z direction
 def get_throwing_velocity(starting_pose, throwing_pose, target_block_pos):
-    return [0.0, 0.0, 0.0]
+    return [0.1, 0.0, 0.0]
 
