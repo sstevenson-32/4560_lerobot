@@ -59,7 +59,7 @@ def get_inverse_kinematics(target_position, target_orientation=None):
 
     return joint_config
 
-def get_inverse_kinematics(target_position, target_orientation=None):
+def get_end_effector_inverse_kinematics(target_position, target_orientation=None):
     "Geometric approach specific to the so-101 arms"
 
     # 1) Parse destination coordinates and combine to a single target matrix

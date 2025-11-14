@@ -2,7 +2,7 @@ import time
 import mujoco
 import numpy as np
 import math
-from so101_mujoco_inverse_kinematics import get_inverse_kinematics
+from so101_mujoco_inverse_kinematics import get_end_effector_inverse_kinematics, get_inverse_kinematics
 from so101_mujoco_forward_kinematics import get_forward_kinematics
 
 def convert_to_dictionary(qpos):
@@ -207,7 +207,7 @@ def throw_obj(m, d, viewer, throw_velocity, throwing_pose, end_pose):
         target_point = eval_poly(throwing_coefficients, t)
 
         # Using IK, get target joint pos
-        positions_dict = get_inverse_kinematics(target_point)
+        positions_dict = get_end_effector_inverse_kinematics(target_point)
 
         # Move to this point
         send_position_command(d, positions_dict)
