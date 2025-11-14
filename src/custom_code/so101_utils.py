@@ -128,7 +128,6 @@ def move_to_pose_cubic(bus, desired_position, duration):
 
 
 def pick_up_block(bus, block_position, move_to_duration):
-    
     # Move above block with gripper open
     block_raised = block_position.copy()
     block_raised[2] += 0.05  # raise block height amount
@@ -178,7 +177,6 @@ def pick_up_block_cubic(bus, block_position, move_to_duration):
 
 
 def place_block(bus, target_position, move_to_duration):
-    
     # Move above target with gripper closed
     block_raised = target_position.copy()
     block_raised[2] += 0.03  # raise 1 inch
@@ -203,7 +201,6 @@ def place_block(bus, target_position, move_to_duration):
     return bus
 
 def place_block_cubic(bus, target_position, move_to_duration):
-    
     # Move above target with gripper closed
     block_raised = target_position.copy()
     block_raised[2] += 0.03  # raise 1 inch
@@ -226,3 +223,44 @@ def place_block_cubic(bus, target_position, move_to_duration):
     move_to_pose_cubic(bus, block_configuration_raised, 1.0)
 
     return bus
+
+
+def throw_obj(bus, target_position):
+    # Setup timing args
+    start_time = time.time()
+    starting_pose = bus.sync_read("Present_Position")
+
+    # Constant elbow flex to release ball at
+    elbow_flex_release = -45.0
+
+    # Calculate time from starting to target position to achieve target velocity
+    duration = 5.0
+
+    # Move to positions
+    while True:
+        t = time.time() - start_time
+        if t > duration:
+            break
+
+        # Interpolation factor [0,1] (make sure it doesn't exceed 1)
+        alpha = min(t / duration, 1)
+
+        # Interpolate each joint
+        position_dict = {}
+        for joint in target_position:
+            p0 = starting_pose[joint]
+            pf = target_position[joint]
+            position_dict[joint] = (1 - alpha) * p0 + alpha * pf
+        
+        # Open grippers if at release position
+        if position_dict['elbow_flex'] >= elbow_flex_release:
+            position_dict['gripper'] = 50.0
+
+        # Send command
+        bus.sync_write("Goal_Position", position_dict, normalize=True)
+        
+        # Pick up changes to the physics state, apply perturbations, update options from GUI.
+        viewer.sync()
+
+    while True:
+        pass

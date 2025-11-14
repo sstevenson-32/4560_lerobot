@@ -1,5 +1,5 @@
 import numpy as np
-import so101_mujoco_forward_kinematics as so101_mujoco_forward_kinematics
+import so101_mujoco_forward_kinematics
 
 def get_inverse_kinematics(target_position, target_orientation=None):
     "Geometric approach specific to the so-101 arms"
@@ -14,10 +14,8 @@ def get_inverse_kinematics(target_position, target_orientation=None):
     theta_1 = np.rad2deg( -np.atan( y_dest / (x_dest - 0.038835) ) )
 
     # 3) Get and parse target wrist position
-    target_wrist_position = get_wrist_flex_position(target_position)
-    x_wrist = target_wrist_position[0][0]
-    y_wrist = target_wrist_position[0][1]
-    z_wrist = target_wrist_position[0][2]
+    wrist_pos, wrist_orient = get_wrist_flex_position(target_position)
+    x_wrist, y_wrist, z_wrist = float(wrist_pos[0]), float(wrist_pos[1]), float(wrist_pos[2])
 
     g_w2 = so101_mujoco_forward_kinematics.get_gw1(theta_1) @ so101_mujoco_forward_kinematics.get_g12(0)
     g_w2_d = g_w2[0:3, 3]
@@ -61,6 +59,65 @@ def get_inverse_kinematics(target_position, target_orientation=None):
 
     return joint_config
 
+def get_inverse_kinematics(target_position, target_orientation=None):
+    "Geometric approach specific to the so-101 arms"
+
+    # 1) Parse destination coordinates and combine to a single target matrix
+    x_dest = target_position[0]
+    y_dest = target_position[1]
+    z_dest = target_position[2]
+    # print(f"x_dest: {x_dest:.3f}, y_dest: {y_dest:.3f}, z_dest: {z_dest:.3f}")
+
+    # 2) Solve for theta_1 (top view), what will get wrist directly above cube
+    theta_1 = np.rad2deg( -np.atan( y_dest / (x_dest - 0.038835) ) )
+
+    # 3) Parse target position
+    wrist_pos, wrist_orient = get_wrist_flex_position(target_position)
+    x_wrist, y_wrist, z_wrist = float(wrist_pos[0]), float(wrist_pos[1]), float(wrist_pos[2])
+
+    g_w2 = so101_mujoco_forward_kinematics.get_gw1(theta_1) @ so101_mujoco_forward_kinematics.get_g12(0)
+    g_w2_d = g_w2[0:3, 3]
+    # print(f"x_offset: {g_w2_d[0]}, y_offset: {g_w2_d[1]}")
+    # print(f"x_target: {(x_wrist - g_w2_d[0]):.3f}, y_target: {(y_wrist - g_w2_d[1]):.3f}")
+
+    dist_target = np.sqrt( np.square(x_wrist - g_w2_d[0]) + np.square(y_wrist - g_w2_d[1]) )
+    z_target = z_wrist - g_w2_d[2]
+    # print(f"dist_target: {dist_target:.3f}, z_target: {z_target:.3f}")
+
+    l_1 = 0.11257
+    l_2 = 0.1349
+
+    # 4) Solve for theta_2 and theta_3 (side view)
+    delta = 0.24378689318
+    alpha = np.acos( (np.square(dist_target) + np.square(z_target) + np.square(l_1) - np.square(l_2)) / (2 * l_1 * np.sqrt(np.square(dist_target) + np.square(z_target))) )
+    beta = np.acos( (np.square(l_1) + np.square(l_2) - np.square(dist_target) - np.square(z_target)) / (2 * l_1 * l_2) )
+    gamma = np.atan2(z_target, dist_target)
+
+    # 5) Determine if we should use lefty or right orientation
+    theta_2 = np.rad2deg(np.pi/2 - (alpha + gamma) - delta)
+    theta_3 = np.rad2deg(np.pi/2 - beta + delta)
+
+    # 5) Solve for theta_4
+    theta_4 = 90 - (theta_2 + theta_3)
+
+    # 6) Solve for theta_5
+    theta_5 = -theta_1
+
+    # print(f"theta_1: {theta_1:.2f}, theta_2: {theta_2:.2f}, theta_3: {theta_3:.2f}, theta_4: {theta_4:.2f}, theta_5: {theta_5:.2f}")
+
+    # Initialize the joint configuration dictionary
+    joint_config = {
+        'shoulder_pan': theta_1,
+        'shoulder_lift': theta_2,
+        'elbow_flex': theta_3,
+        'wrist_flex': theta_4,
+        'wrist_roll': theta_5,
+        'gripper': 0.0
+    }
+
+    return joint_config
+
+
 # Given target location, solve for position of wrist frame
 # Assuming we want wrist frame directly above target position
 def get_wrist_flex_position(target_position):
@@ -76,49 +133,15 @@ def get_wrist_flex_position(target_position):
 
 # Given a target position, solve for the initial throwing position
 # Rotates theta_1, else goes to a set position
-def get_starting_throw_position(target_position):
+def get_throw_theta_1(target_position):
     # Solve for theta_1 with inverse kinematics logic
     x_dest = target_position[0]
     y_dest = target_position[1]
     theta_1 = np.rad2deg( -np.atan( y_dest / (x_dest - 0.038835) ) )
 
-    # Define starting position
-    joint_config = {
-        'shoulder_pan': theta_1,
-        'shoulder_lift': -45.0,
-        'elbow_flex': -80.00,
-        'wrist_flex': 0.0,
-        'wrist_roll': 90.0,
-        'gripper': 0
-    }
+    return theta_1
 
-    return joint_config
-
-# Given a target position, solve for final throwing position
-# and joint velocities at this point
-def get_throw_pos_and_vel(target_position):
-    # Define ending joint config
-    x_dest = target_position[0]
-    y_dest = target_position[1]
-    theta_1 = np.rad2deg( -np.atan( y_dest / (x_dest - 0.038835) ) )
-
-    joint_config = {
-        'shoulder_pan': theta_1,
-        'shoulder_lift': -45.0,
-        'elbow_flex': 0.00,
-        'wrist_flex': 0.0,
-        'wrist_roll': 90.0,
-        'gripper': 50.0
-    }
-
-    joint_vel = {
-        'shoulder_pan': 0.0,
-        'shoulder_lift': 0.0,
-        'elbow_flex': 0.00,
-        'wrist_flex': 0.0,
-        'wrist_roll': 0.0,
-        'gripper': 0.0
-    }
-
-    return joint_config, joint_vel
+# Throwing velocity, velocity in x, y, and z direction
+def get_throwing_velocity(starting_pose, throwing_pose, target_block_pos):
+    return [0.0, 0.0, 0.0]
 

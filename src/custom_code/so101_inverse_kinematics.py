@@ -73,3 +73,41 @@ def get_wrist_flex_position(target_position):
     wrist_flex_orientation = gw4[0:3, 0:3]
 
     return wrist_flex_position, wrist_flex_orientation
+
+# Given a target position, solve for the initial throwing position
+# Rotates theta_1, else goes to a set position
+def get_starting_throw_position(target_position):
+    # Solve for theta_1 with inverse kinematics logic
+    x_dest = target_position[0]
+    y_dest = target_position[1]
+    theta_1 = np.rad2deg( -np.atan( y_dest / (x_dest - 0.038835) ) )
+
+    # Define starting position
+    joint_config = {
+        'shoulder_pan': theta_1,
+        'shoulder_lift': -45.0,
+        'elbow_flex': -80.00,
+        'wrist_flex': 0.0,
+        'wrist_roll': 90.0,
+        'gripper': 0
+    }
+
+    return joint_config
+
+# Given a target position, solve for final throwing position
+def get_ending_throw_position(target_position):
+    # Define ending joint config
+    x_dest = target_position[0]
+    y_dest = target_position[1]
+    theta_1 = np.rad2deg( -np.atan( y_dest / (x_dest - 0.038835) ) )
+
+    joint_config = {
+        'shoulder_pan': theta_1,
+        'shoulder_lift': -45.0,
+        'elbow_flex': 0.00,
+        'wrist_flex': 0.0,
+        'wrist_roll': 90.0,
+        'gripper': 0.0
+    }
+
+    return joint_config
