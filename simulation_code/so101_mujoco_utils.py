@@ -162,54 +162,70 @@ def place_block_cubic(m, d, viewer, target_position, move_to_duration):
     move_to_pose_cubic(m, d, viewer, None, block_configuration_raised, move_to_duration)
 
 
-def throw_obj(m, d, viewer, throw_velocity, throwing_pose, end_pose):
+def throw_obj(m, d, viewer, theta_1, throw_velocity, throwing_pose, end_pose):
     # Setup timing args
     start_time = time.time()
     starting_pose = d.qpos.copy()
     starting_pose = convert_to_dictionary(starting_pose)
 
     # **** Tune these as needed ****
-    time_to_throw = 5.0
+    time_to_throw = 0.5
     time_to_stop = 2.0
     # ******************************
-
-    # Parse relevant data from starting_pose
-    theta_1 = starting_pose['shoulder_pan']
 
     # Set constant throwing pose
     throwing_pose = {
         'shoulder_pan': theta_1,
         'shoulder_lift': -45.0,
-        'elbow_flex': 0.00,
+        'elbow_flex': -45.00,
         'wrist_flex': 0.0,
         'wrist_roll': 90.0,
-        'gripper': 0.0
+        'gripper': 50.0
     }
 
     # Solve coefficients to get from p(0) to p(throw), with p_dot(0) = 0, p_dot(throw) = throw_velocity
     start_point, start_rot = get_forward_kinematics(starting_pose)
     throw_point, throw_rot = get_forward_kinematics(throwing_pose)
-    throwing_coefficients = eval_coeff(start_point, throw_point, 0.0, throw_velocity, time_to_throw)
+    throwing_coefficients = eval_coeff(start_point, throw_point, [0.0, 0.0, 0.0], throw_velocity, time_to_throw)
     print(f"==================================================\n")
     print(f"start_point: {start_point}\nthrow_point: {throw_point}\nthrow_coeff: {throwing_coefficients}")
 
     # Solve coefficients to get from p(throw) to p(final), with p_dot(throw) = throw_velocity, p_dot(final) = 0
-    # end_point = get_forward_kinematics(end_pose)[0]
-    # stopping_coefficients = eval_coeff(throw_point, end_point, throw_velocity, 0.0, time_to_stop)
-    # print(f"end_point: {end_point}\nstop_coeff: {stopping_coefficients}")
+    end_point, end_rot = get_forward_kinematics(end_pose)
+    stopping_coefficients = eval_coeff(throw_point, end_point, throw_velocity, [0.0, 0.0, 0.0], time_to_stop)
+    print(f"end_point: {end_point}\nstop_coeff: {stopping_coefficients}")
     print(f"\n==================================================")
+
+    # target_point = eval_poly(throwing_coefficients, 0.0)
+    # print(f"Calculating IK for position: {target_point}")
+    # positions_dict = get_end_effector_inverse_kinematics(target_point)
+
+    # return
 
     # Move to these positions
     while True:
         t = time.time() - start_time
-        if t > 10:
+        if t > time_to_throw + time_to_stop:
             break
 
-        # Get target point
-        target_point = eval_poly(throwing_coefficients, t)
+        # Use different coefficients as needed
+        if t >= time_to_throw:
+            # Use stopping coefficients
+            target_point = eval_poly(stopping_coefficients, t - time_to_throw)
+        else:
+            # Use throwing coefficients
+            target_point = eval_poly(throwing_coefficients, t)
 
         # Using IK, get target joint pos
         positions_dict = get_end_effector_inverse_kinematics(target_point)
+
+        # Open gripper if near time_to_throw
+        if (t >= (time_to_throw - 1e-9)):
+            positions_dict['wrist_roll'] = 90.0
+            positions_dict['gripper'] = 50.0
+        else:
+            positions_dict['wrist_roll'] = 90.0
+            positions_dict['gripper'] = 0.0
 
         # Move to this point
         send_position_command(d, positions_dict)
@@ -217,10 +233,6 @@ def throw_obj(m, d, viewer, throw_velocity, throwing_pose, end_pose):
 
         # Pick up changes to the physics state, apply perturbations, update options from GUI.
         viewer.sync()
-
-    # Using waypoints, move from p(0) to p(throw) and release
-
-    # Using waypoints, move from p(throw) to p(final)
 
 
 # Solve coefficients and time based on initial and final config and velocities

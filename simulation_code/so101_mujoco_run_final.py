@@ -3,6 +3,7 @@ import mujoco
 import mujoco.viewer
 from so101_mujoco_utils import set_initial_pose, send_position_command, move_to_pose, hold_position, pick_up_block_cubic, throw_obj
 from so101_mujoco_inverse_kinematics import get_throw_theta_1, get_throwing_velocity, get_end_effector_inverse_kinematics
+from so101_mujoco_forward_kinematics import get_forward_kinematics
 import numpy as np
 
 m = mujoco.MjModel.from_xml_path('simulation_code/model/scene.xml')
@@ -36,6 +37,9 @@ send_position_command(d, initial_config)
 
 # Start simulation with mujoco viewer
 def test_basic():
+    # Configure numpy to print nicely
+    np.set_printoptions(precision=3, suppress=True)
+
     with mujoco.viewer.launch_passive(m, d) as viewer:
         # Specify object start and desired position
         start_obj_position = [0.2, 0.0, 0.0]
@@ -64,10 +68,10 @@ def test_basic():
         throw_config = {
             'shoulder_pan': theta_1,
             'shoulder_lift': -45.0,
-            'elbow_flex': -45.00,
+            'elbow_flex': -30.00,
             'wrist_flex': 0.0,
             'wrist_roll': 90.0,
-            'gripper': 0
+            'gripper': 50.0
         }
 
         end_config = {
@@ -76,42 +80,52 @@ def test_basic():
             'elbow_flex': 0.00,
             'wrist_flex': 0.0,
             'wrist_roll': 90.0,
-            'gripper': 0
+            'gripper': 50.0
         }
 
-        move_to_pose(m, d, viewer, starting_config, 1.0)
+        # print(f"========== Static Points ==========\n")
+        # move_to_pose(m, d, viewer, starting_config, 1.0)
+        # start_point, start_rot = get_forward_kinematics(starting_config)
+        # print(f"Starting point: {start_point}")
         # hold_position(m, d, viewer, 2.0)
 
         # move_to_pose(m, d, viewer, throw_config, 1.0)
+        # throw_point, throw_rot = get_forward_kinematics(throw_config)
+        # print(f"Throw point: {throw_point}")
         # hold_position(m, d, viewer, 2.0)
 
         # move_to_pose(m, d, viewer, end_config, 1.0)
+        # end_point, end_rot = get_forward_kinematics(end_config)
+        # print(f"End point: {end_point}")
         # hold_position(m, d, viewer, 2.0)
 
+        # print(f"\n==================================================")
+        move_to_pose(m, d, viewer, starting_config, 1.0)    # Reset to starting pos
+
         # Test new IK
-        joint_config = get_end_effector_inverse_kinematics([0, 0, 0.3])
-        move_to_pose(m, d, viewer, joint_config, 2.0)
+        # START POINT
+        # joint_config = get_end_effector_inverse_kinematics([0, 0, 0.3])
+        # move_to_pose(m, d, viewer, joint_config, 2.0)
 
-        # THROW POINT: Causing errors
-        joint_config = get_end_effector_inverse_kinematics([1.31720722*10**-1, -2.79227353*10**-8,  4.69481449*10**-1])
-        move_to_pose(m, d, viewer, joint_config, 2.0)
+        # THROW POINT
+        # joint_config = get_end_effector_inverse_kinematics([1.31720722*10**-1, -2.79227353*10**-8,  4.69481449*10**-1])
+        # move_to_pose(m, d, viewer, joint_config, 2.0)
 
-        joint_config = get_end_effector_inverse_kinematics([[2.21191747*10**-1, -5.48190523*10**-8,  4.27755268*10**-1]])
-        move_to_pose(m, d, viewer, joint_config, 2.0)
+        # END POINT
+        # joint_config = get_end_effector_inverse_kinematics([[2.21191747*10**-1, -5.48190523*10**-8,  4.27755268*10**-1]])
+        # move_to_pose(m, d, viewer, joint_config, 2.0)
 
-        hold_position(m, d, viewer, 10)
-
+        hold_position(m, d, viewer, 2.0)
 
         # Show a cube where the target is
         show_cube(viewer, desired_obj_position, np.eye(3))
 
-
         # 3) Get velocity to throw the ball at
-        throw_velocity = get_throwing_velocity(starting_config, throw_config, desired_obj_position)
+        throw_velocity = get_throwing_velocity(theta_1, starting_config, throw_config, desired_obj_position)
 
 
         # 4) Throw the object
-        throw_obj(m, d, viewer, throw_velocity, throw_config, end_config)
+        throw_obj(m, d, viewer, theta_1, throw_velocity, throw_config, end_config)
         # move_to_pose(m, d, viewer, joint_configuration, 1.0)
 
 
