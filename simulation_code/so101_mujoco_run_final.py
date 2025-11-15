@@ -2,8 +2,7 @@ import time
 import mujoco
 import mujoco.viewer
 from so101_mujoco_utils import set_initial_pose, send_position_command, move_to_pose, hold_position, pick_up_block_cubic, throw_obj
-from so101_mujoco_inverse_kinematics import get_throw_theta_1, get_throwing_velocity, get_end_effector_inverse_kinematics
-from so101_mujoco_forward_kinematics import get_forward_kinematics
+from so101_mujoco_inverse_kinematics import get_throw_theta_1, get_throwing_velocity
 import numpy as np
 
 m = mujoco.MjModel.from_xml_path('simulation_code/model/scene.xml')

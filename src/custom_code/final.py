@@ -1,8 +1,8 @@
-from so101_utils import load_calibration, move_to_pose_cubic, hold_position, setup_motors, pick_up_block_cubic, place_block_cubic
-
+from so101_utils import load_calibration, move_to_pose_cubic, hold_position, setup_motors, pick_up_block_cubic, place_block_cubic, throw_obj
+from so101_inverse_kinematics import get_throw_theta_1, get_throwing_velocity
 
 # CONFIGURATION VARIABLES
-PORT_ID = "COM4"
+PORT_ID = "COM7"
 ROBOT_NAME = "follower-1"
 
 # --- Specified Parameters ---
@@ -16,17 +16,12 @@ zero_config = {
     'gripper': 0
 }
 
-# block_one_start = [0.2-0.04, -0.15+0.05, 0.0]
-# block_one_target = [0.25-0.05, 0.2-0.08, 0.0]
-
-# block_two_start = [0.25-0.05, -0.1+0.03, 0.0]
-# block_two_target = [0.25-0.05, 0.2-0.08, 0.025]
-
-block_one_start = [0.25, 0.1, 0.0]
-block_one_target = [0.25, -0.1, 0.0]
+start_obj_position = [0.2, 0.0, 0.0]
+# desired_obj_position = [0.4, 0.4, 0.0]
+desired_obj_position = [0.4, 0.0, 0.0]
 
 move_time = 1.5
-hold_time = 0.05
+hold_time = 1.0
 
 # ------------------------
 
@@ -40,12 +35,49 @@ starting_pose = bus.sync_read("Present_Position")
 move_to_pose_cubic(bus, zero_config, move_time)
 hold_position(bus, hold_time)
 
-# 1) Pickup the target object
-pick_up_block_cubic(bus, block_one_start, move_time)
-hold_position(bus, hold_time)
+# 1) Pickup the target object from a set position
+# pick_up_block_cubic(bus, block_one_start, move_time)
+# hold_position(bus, hold_time)
 
-# 2) Get to starting throwing position
-joint_config = 
+# 2) Get required positions
+theta_1 = get_throw_theta_1(desired_obj_position)
+
+starting_config = {
+    'shoulder_pan': theta_1,
+    'shoulder_lift': -45.0,
+    'elbow_flex': -80.00,
+    'wrist_flex': 0.0,
+    'wrist_roll': 90.0,
+    'gripper': 0
+}
+
+throw_config = {
+    'shoulder_pan': theta_1,
+    'shoulder_lift': -45.0,
+    'elbow_flex': -30.00,
+    'wrist_flex': 0.0,
+    'wrist_roll': 90.0,
+    'gripper': 50.0
+}
+
+end_config = {
+    'shoulder_pan': theta_1,
+    'shoulder_lift': -45.0,
+    'elbow_flex': 0.00,
+    'wrist_flex': 0.0,
+    'wrist_roll': 90.0,
+    'gripper': 50.0
+}
+
+# 3) Move to starting pose
+move_to_pose_cubic(bus, starting_config, move_time)
+
+# 4) Get velocity to throw the ball at
+throw_velocity = get_throwing_velocity(theta_1, starting_config, throw_config, desired_obj_position)
+
+
+# 5) Throw the object
+throw_obj(bus, theta_1, throw_velocity, throw_config, end_config)
 
 # End at starting config
 move_to_pose_cubic(bus, starting_pose, move_time)
