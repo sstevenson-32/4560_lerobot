@@ -248,45 +248,23 @@ def place_block_cubic(bus, target_position, move_to_duration):
     return bus
 
 
-def throw_obj(bus, theta_1, throw_velocity, throwing_pose, end_pose):
+def throw_obj(bus, theta_1, throw_velocity, throwing_pose, end_pose, time_to_throw, time_to_stop):
     # Setup timing args
     start_time = time.time()
     starting_pose = bus.sync_read("Present_Position")
-    # starting_pose = convert_to_dictionary(starting_pose)
-
-    # **** Tune these as needed ****
-    time_to_throw = 1.5
-    time_to_stop = 2.0
-    # ******************************
-
-    # Set constant throwing pose
-    throwing_pose = {
-        'shoulder_pan': theta_1,
-        'shoulder_lift': -45.0,
-        'elbow_flex': -45.00,
-        'wrist_flex': 0.0,
-        'wrist_roll': 90.0,
-        'gripper': 50.0
-    }
 
     # Solve coefficients to get from p(0) to p(throw), with p_dot(0) = 0, p_dot(throw) = throw_velocity
     start_point, start_rot = get_forward_kinematics(starting_pose)
     throw_point, throw_rot = get_forward_kinematics(throwing_pose)
     throwing_coefficients = eval_coeff(start_point, throw_point, [0.0, 0.0, 0.0], throw_velocity, time_to_throw)
-    print(f"==================================================\n")
+    print(f"\n==================================================")
     print(f"start_point: {start_point}\nthrow_point: {throw_point}\nthrow_coeff: {throwing_coefficients}")
 
     # Solve coefficients to get from p(throw) to p(final), with p_dot(throw) = throw_velocity, p_dot(final) = 0
     end_point, end_rot = get_forward_kinematics(end_pose)
     stopping_coefficients = eval_coeff(throw_point, end_point, throw_velocity, [0.0, 0.0, 0.0], time_to_stop)
     print(f"end_point: {end_point}\nstop_coeff: {stopping_coefficients}")
-    print(f"\n==================================================")
-
-    # target_point = eval_poly(throwing_coefficients, 0.0)
-    # print(f"Calculating IK for position: {target_point}")
-    # positions_dict = get_end_effector_inverse_kinematics(target_point)
-
-    # return
+    print(f"==================================================\n")
 
     # Move to these positions
     while True:
@@ -306,7 +284,7 @@ def throw_obj(bus, theta_1, throw_velocity, throwing_pose, end_pose):
         positions_dict = get_end_effector_inverse_kinematics(target_point)
 
         # Open gripper if near time_to_throw
-        if (t >= (time_to_throw - 1e-9)):
+        if (t > 0.3):
             positions_dict['wrist_roll'] = 90.0
             positions_dict['gripper'] = 50.0
         else:

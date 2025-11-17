@@ -2,7 +2,7 @@ from so101_utils import load_calibration, move_to_pose_cubic, hold_position, set
 from so101_inverse_kinematics import get_throw_theta_1, get_throwing_velocity
 
 # CONFIGURATION VARIABLES
-PORT_ID = "COM7"
+PORT_ID = "COM6"
 ROBOT_NAME = "follower-1"
 
 # --- Specified Parameters ---
@@ -36,8 +36,8 @@ move_to_pose_cubic(bus, zero_config, move_time)
 hold_position(bus, hold_time)
 
 # 1) Pickup the target object from a set position
-# pick_up_block_cubic(bus, block_one_start, move_time)
-# hold_position(bus, hold_time)
+pick_up_block_cubic(bus, start_obj_position, move_time)
+hold_position(bus, hold_time)
 
 # 2) Get required positions
 theta_1 = get_throw_theta_1(desired_obj_position)
@@ -45,7 +45,7 @@ theta_1 = get_throw_theta_1(desired_obj_position)
 starting_config = {
     'shoulder_pan': theta_1,
     'shoulder_lift': -45.0,
-    'elbow_flex': -80.00,
+    'elbow_flex': -50.00,
     'wrist_flex': 0.0,
     'wrist_roll': 90.0,
     'gripper': 0
@@ -77,7 +77,9 @@ throw_velocity = get_throwing_velocity(theta_1, starting_config, throw_config, d
 
 
 # 5) Throw the object
-throw_obj(bus, theta_1, throw_velocity, throw_config, end_config)
+time_to_throw = 1.0
+time_to_stop = 2.0
+throw_obj(bus, theta_1, throw_velocity, throw_config, end_config, time_to_throw, time_to_stop)
 
 # End at starting config
 move_to_pose_cubic(bus, starting_pose, move_time)
