@@ -168,16 +168,6 @@ def throw_obj(m, d, viewer, theta_1, throw_velocity, throwing_pose, end_pose, ti
     starting_pose = d.qpos.copy()
     starting_pose = convert_to_dictionary(starting_pose)
 
-    # Set constant throwing pose
-    throwing_pose = {
-        'shoulder_pan': theta_1,
-        'shoulder_lift': -45.0,
-        'elbow_flex': -30.00,
-        'wrist_flex': 0.0,
-        'wrist_roll': 90.0,
-        'gripper': 50.0
-    }
-
     # Solve coefficients to get from p(0) to p(throw), with p_dot(0) = 0, p_dot(throw) = throw_velocity
     start_point, start_rot = get_forward_kinematics(starting_pose)
     throw_point, throw_rot = get_forward_kinematics(throwing_pose)
@@ -224,7 +214,7 @@ def throw_obj(m, d, viewer, theta_1, throw_velocity, throwing_pose, end_pose, ti
         positions_dict = get_end_effector_inverse_kinematics(target_point)
 
         # Open gripper if near time_to_throw
-        if (t >= (time_to_throw - 1e-9)):
+        if (t >= (time_to_throw - 0.01)):
             positions_dict['wrist_roll'] = 90.0
             positions_dict['gripper'] = 50.0
         else:
