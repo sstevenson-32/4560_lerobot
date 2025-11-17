@@ -89,7 +89,7 @@ def get_end_effector_inverse_kinematics(target_position, target_orientation=None
 
     # Elbow up if x >= 0, elbow down if x < 0
     if (x_dest < 0):
-        dist_target = dist_target + 0.001
+        # dist_target = dist_target + 0.001
         # print(f"========== Solving for alpha ==========")
         # numerator = (np.square(dist_target) + np.square(z_target) + np.square(l_1) - np.square(l_2))
         # denominator = (2 * l_1 * np.sqrt(np.square(dist_target) + np.square(z_target)))

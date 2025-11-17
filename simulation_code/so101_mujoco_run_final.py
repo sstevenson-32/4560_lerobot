@@ -134,7 +134,6 @@ def test_basic():
         time_to_throw = 4.0
         time_to_stop = 4.0
         throw_obj(m, d, viewer, theta_1, throw_velocity, throw_config, end_config, time_to_throw, time_to_stop)
-        # move_to_pose(m, d, viewer, joint_configuration, 1.0)
 
 
         # Hold position for 10 seconds
