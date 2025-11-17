@@ -284,7 +284,7 @@ def throw_obj(bus, theta_1, throw_velocity, throwing_pose, end_pose, time_to_thr
         positions_dict = get_end_effector_inverse_kinematics(target_point)
 
         # Open gripper if near time_to_throw
-        if (t > 0.3):
+        if (t > (time_to_throw / 2.0)):
             positions_dict['wrist_roll'] = 90.0
             positions_dict['gripper'] = 50.0
         else:

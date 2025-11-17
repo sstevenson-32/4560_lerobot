@@ -57,8 +57,8 @@ def test_basic():
         
         starting_config = {
             'shoulder_pan': theta_1,
-            'shoulder_lift': -45.0,
-            'elbow_flex': -80.00,
+            'shoulder_lift': -55.0,
+            'elbow_flex': -60.00,
             'wrist_flex': 0.0,
             'wrist_roll': 90.0,
             'gripper': 0
@@ -67,7 +67,7 @@ def test_basic():
         throw_config = {
             'shoulder_pan': theta_1,
             'shoulder_lift': -45.0,
-            'elbow_flex': -30.00,
+            'elbow_flex': -45.00,
             'wrist_flex': 0.0,
             'wrist_roll': 90.0,
             'gripper': 20.0
@@ -131,8 +131,8 @@ def test_basic():
 
 
         # 4) Throw the object
-        time_to_throw = 4.0
-        time_to_stop = 4.0
+        time_to_throw = 1.5
+        time_to_stop = 2.0
         throw_obj(m, d, viewer, theta_1, throw_velocity, throw_config, end_config, time_to_throw, time_to_stop)
 
 

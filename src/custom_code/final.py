@@ -32,8 +32,8 @@ bus = setup_motors(calibration, PORT_ID)
 starting_pose = bus.sync_read("Present_Position")
 
 # Move to zero config
-move_to_pose_cubic(bus, zero_config, move_time)
-hold_position(bus, hold_time)
+# move_to_pose_cubic(bus, zero_config, move_time)
+# hold_position(bus, hold_time)
 
 # 1) Pickup the target object from a set position
 pick_up_block_cubic(bus, start_obj_position, move_time)
@@ -43,30 +43,30 @@ hold_position(bus, hold_time)
 theta_1 = get_throw_theta_1(desired_obj_position)
 
 starting_config = {
-    'shoulder_pan': theta_1,
-    'shoulder_lift': -45.0,
-    'elbow_flex': -50.00,
-    'wrist_flex': 0.0,
-    'wrist_roll': 90.0,
-    'gripper': 0
+'shoulder_pan': theta_1,
+'shoulder_lift': -55.0,
+'elbow_flex': -60.00,
+'wrist_flex': 0.0,
+'wrist_roll': 90.0,
+'gripper': 0
 }
 
 throw_config = {
-    'shoulder_pan': theta_1,
-    'shoulder_lift': -45.0,
-    'elbow_flex': -30.00,
-    'wrist_flex': 0.0,
-    'wrist_roll': 90.0,
-    'gripper': 50.0
+'shoulder_pan': theta_1,
+'shoulder_lift': -45.0,
+'elbow_flex': -45.00,
+'wrist_flex': 0.0,
+'wrist_roll': 90.0,
+'gripper': 20.0
 }
 
 end_config = {
-    'shoulder_pan': theta_1,
-    'shoulder_lift': -45.0,
-    'elbow_flex': 0.00,
-    'wrist_flex': 0.0,
-    'wrist_roll': 90.0,
-    'gripper': 50.0
+'shoulder_pan': theta_1,
+'shoulder_lift': -45.0,
+'elbow_flex': 0.00,
+'wrist_flex': 0.0,
+'wrist_roll': 90.0,
+'gripper': 50.0
 }
 
 # 3) Move to starting pose
@@ -77,8 +77,8 @@ throw_velocity = get_throwing_velocity(theta_1, starting_config, throw_config, d
 
 
 # 5) Throw the object
-time_to_throw = 1.0
-time_to_stop = 2.0
+time_to_throw = 1.5
+time_to_stop = 1.0
 throw_obj(bus, theta_1, throw_velocity, throw_config, end_config, time_to_throw, time_to_stop)
 
 # End at starting config
