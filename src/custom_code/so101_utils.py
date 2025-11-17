@@ -256,7 +256,9 @@ def throw_obj(bus, theta_1, throw_velocity, throwing_pose, end_pose, time_to_thr
     # Solve coefficients to get from p(0) to p(throw), with p_dot(0) = 0, p_dot(throw) = throw_velocity
     start_point, start_rot = get_forward_kinematics(starting_pose)
     throw_point, throw_rot = get_forward_kinematics(throwing_pose)
-    throwing_coefficients = eval_coeff(start_point, throw_point, [0.0, 0.0, 0.0], throw_velocity, time_to_throw)
+    throwing_coefficients = eval_coeff(2*throw_point/3, throw_point, 3*throw_velocity/4, throw_velocity, time_to_throw/3)
+    way_one_coefficients = eval_coeff(start_point, throw_point/3, [0.0, 0.0, 0.0], throw_velocity/4, time_to_throw/3)
+    way_two_coefficients = eval_coeff(throw_point/3, 2*throw_point/3, throw_velocity/4, 3*throw_velocity/4, time_to_throw/3)
     print(f"\n==================================================")
     print(f"start_point: {start_point}\nthrow_point: {throw_point}\nthrow_coeff: {throwing_coefficients}")
 
@@ -276,6 +278,10 @@ def throw_obj(bus, theta_1, throw_velocity, throwing_pose, end_pose, time_to_thr
         if t >= time_to_throw:
             # Use stopping coefficients
             target_point = eval_poly(stopping_coefficients, t - time_to_throw)
+        elif t >= 0 and t < time_to_throw/3:
+            target_point = eval_poly(way_one_coefficients, t)
+        elif t >= time_to_throw/3 and t < 2*time_to_throw/3:
+            target_point = eval_poly(way_two_coefficients, t)
         else:
             # Use throwing coefficients
             target_point = eval_poly(throwing_coefficients, t)
