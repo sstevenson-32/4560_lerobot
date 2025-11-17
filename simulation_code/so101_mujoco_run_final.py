@@ -2,7 +2,7 @@ import time
 import mujoco
 import mujoco.viewer
 from so101_mujoco_utils import set_initial_pose, send_position_command, move_to_pose, hold_position, pick_up_block_cubic, throw_obj
-from so101_mujoco_inverse_kinematics import get_throw_theta_1, get_throwing_velocity
+from so101_mujoco_inverse_kinematics import get_throw_theta_1, get_throwing_velocity, get_end_effector_inverse_kinematics
 import numpy as np
 
 m = mujoco.MjModel.from_xml_path('simulation_code/model/scene.xml')
@@ -99,21 +99,28 @@ def test_basic():
         # hold_position(m, d, viewer, 2.0)
 
         # print(f"\n==================================================")
-        move_to_pose(m, d, viewer, starting_config, 1.0)    # Reset to starting pos
 
         # Test new IK
-        # START POINT
-        # joint_config = get_end_effector_inverse_kinematics([0, 0, 0.3])
-        # move_to_pose(m, d, viewer, joint_config, 2.0)
+        if (False):
+            # START POINT
+            joint_config = get_end_effector_inverse_kinematics([-0.153, 0, 0.467])
+            move_to_pose(m, d, viewer, joint_config, 1.0)
+            print(f"TEST: At starting point")
+            hold_position(m, d, viewer, 1.0)
 
-        # THROW POINT
-        # joint_config = get_end_effector_inverse_kinematics([1.31720722*10**-1, -2.79227353*10**-8,  4.69481449*10**-1])
-        # move_to_pose(m, d, viewer, joint_config, 2.0)
+            # THROW POINT
+            joint_config = get_end_effector_inverse_kinematics([0.009, 0, 0.515])
+            move_to_pose(m, d, viewer, joint_config, 1.0)
+            print(f"TEST: At release point")
+            hold_position(m, d, viewer, 1.0)
 
-        # END POINT
-        # joint_config = get_end_effector_inverse_kinematics([[2.21191747*10**-1, -5.48190523*10**-8,  4.27755268*10**-1]])
-        # move_to_pose(m, d, viewer, joint_config, 2.0)
+            # END POINT
+            joint_config = get_end_effector_inverse_kinematics([.221191747, 0,  .427755268])
+            move_to_pose(m, d, viewer, joint_config, 2.0)
+            print(f"TEST: At end point")
+            hold_position(m, d, viewer, 1.0)
 
+        move_to_pose(m, d, viewer, starting_config, 1.0)    # Reset to starting pos
         hold_position(m, d, viewer, 2.0)
 
         # Show a cube where the target is
@@ -124,7 +131,9 @@ def test_basic():
 
 
         # 4) Throw the object
-        throw_obj(m, d, viewer, theta_1, throw_velocity, throw_config, end_config)
+        time_to_throw = 4.0
+        time_to_stop = 4.0
+        throw_obj(m, d, viewer, theta_1, throw_velocity, throw_config, end_config, time_to_throw, time_to_stop)
         # move_to_pose(m, d, viewer, joint_configuration, 1.0)
 
 

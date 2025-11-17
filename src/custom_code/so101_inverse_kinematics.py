@@ -105,7 +105,7 @@ def get_end_effector_inverse_kinematics(target_position, target_orientation=None
     # eps = 1e-9
     # If outside reach, project onto the reachable boundary (preserve direction)
     if r > reach:
-        # print(f"[IK] target outside reach (r={r:.6f}), projecting to r={reach:.6f}")
+        print(f"[IK] target outside reach (r={r:.6f}), projecting to r={reach:.6f}")
         scale = reach / r
         # scale radial (xy) and z components
         new_dist_signed = dist_signed * scale

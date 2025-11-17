@@ -73,79 +73,52 @@ def get_end_effector_inverse_kinematics(target_position, target_orientation=None
     theta_1_rad = -np.atan(y_dest / (x_dest - 0.038835))
     theta_1 = np.rad2deg(theta_1_rad)
 
-    # 3) Parse target position
-    x_target, y_target, z_target = float(target_position[0]), float(target_position[1]), float(target_position[2])
-
+    # 3) Compute offsets and {1} -> {e} distance
     g_w2 = so101_mujoco_forward_kinematics.get_gw1(theta_1) @ so101_mujoco_forward_kinematics.get_g12(0)
     g_w2_d = g_w2[0:3, 3]
     # print(f"x_offset: {g_w2_d[0]:.3f}, y_offset: {g_w2_d[1]:.3f}")
     # print(f"x_target: {(x_target - g_w2_d[0]):.3f}, y_target: {(y_target - g_w2_d[1]):.3f}")
 
-    # Compute individual distance offsets and forward axis to consider direction
-    dx = x_target - g_w2_d[0]
-    dy = y_target - g_w2_d[1]
-    fx = np.cos(theta_1_rad)
-    fy = np.sin(theta_1_rad)
-
-    # Compute signed distance along forward axis (positive in front, negative behind)
-    dist_signed = dx * fx + dy * fy
-    dist_target = np.sqrt(np.square(dx) + np.square(dy))
-    z_target = z_target - g_w2_d[2]
-    # print(f"dist_signed: {dist_signed:.6f}, dist_target: {dist_target:.6f}, z_target: {z_target:.6f}")
+    dist_target = np.sqrt( np.square(x_dest - g_w2_d[0]) + np.square(y_dest - g_w2_d[1]) )
+    z_target = z_dest - g_w2_d[2]
+    # print(f"dist_target: {dist_target:.6f}, z_target: {z_target:.6f}")
 
     l_1 = 0.11257
     l_2 = 0.1349 + 0.0611 + 0.1034  # Treat L2 as distance from {3} to {end effector}
-
-    # 4) Solve for theta_2 and theta_3 (side view) using IK from lecture notes
     delta = 0.24378689318
 
-    # Use r = sqrt(dist_signed^2 + z^2) when checking reachability
-    r = np.sqrt(dist_signed**2 + z_target**2)
-    reach = l_1 + l_2
-    # eps = 1e-9
-    # If outside reach, project onto the reachable boundary (preserve direction)
-    if r > reach:
-        # print(f"[IK] target outside reach (r={r:.6f}), projecting to r={reach:.6f}")
-        scale = reach / r
-        # scale radial (xy) and z components
-        new_dist_signed = dist_signed * scale
-        new_z = z_target * scale
-        # update x,y/wrist so forward projection is preserved
-        if dist_target > 1e-12:
-            factor_xy = (new_dist_signed / dist_target) if dist_target != 0 else 0.0
-            x_target = g_w2_d[0] + (dx) * factor_xy
-            y_target = g_w2_d[1] + (dy) * factor_xy
-            dist_target = np.sqrt((x_target - g_w2_d[0])**2 + (y_target - g_w2_d[1])**2)
-        else:
-            # purely along z-axis; keep x,y at base offset
-            x_target = g_w2_d[0]
-            y_target = g_w2_d[1]
-            dist_target = 0.0
-        z_target = g_w2_d[2] + new_z
-        # recompute signed distance
-        dx = x_target - g_w2_d[0]
-        dy = y_target - g_w2_d[1]
-        dist_signed = dx * fx + dy * fy
-        r = np.sqrt(dist_signed**2 + (z_target - g_w2_d[2])**2)
+    # Elbow up if x >= 0, elbow down if x < 0
+    if (x_dest < 0):
+        dist_target = dist_target + 0.001
+        # print(f"========== Solving for alpha ==========")
+        # numerator = (np.square(dist_target) + np.square(z_target) + np.square(l_1) - np.square(l_2))
+        # denominator = (2 * l_1 * np.sqrt(np.square(dist_target) + np.square(z_target)))
+        # result = numerator / denominator
+        # print(f"\tNumerator: {numerator}\n\tDenominator: {denominator}\n\tResult: {result}")
 
-    # compute safe cosine-law arguments and clip
-    denom1 = 2.0 * l_1 * np.sqrt(dist_signed**2 + z_target**2) if (dist_signed**2 + z_target**2) > 1e-12 else 1e-12
-    alpha_denom = (dist_signed**2 + z_target**2 + l_1**2 - l_2**2) / denom1
-    alpha_denom_clipped = np.clip(alpha_denom, -1.0, 1.0)
-    alpha = np.arccos(alpha_denom_clipped)
+        # print(f"========== Solving for beta ==========")
+        # numerator = (np.square(l_1) + np.square(l_2) - np.square(dist_target) - np.square(z_target))
+        # denominator = (2 * l_1 * l_2)
+        # result = numerator / denominator
+        # print(f"\tNumerator: {numerator}\n\tDenominator: {denominator}\n\tResult: {result}")
 
-    denom2 = 2.0 * l_1 * l_2 if (2.0 * l_1 * l_2) > 1e-12 else 1e-12
-    beta_denom = (l_1**2 + l_2**2 - dist_signed**2 - z_target**2) / denom2
-    beta_denom_clipped = np.clip(beta_denom, -1.0, 1.0)
-    beta = np.arccos(beta_denom_clipped)
+        # 4) Solve for theta_2 and theta_3 (side view) using IK from lecture notes
+        alpha = np.acos( (np.square(dist_target) + np.square(z_target) + np.square(l_1) - np.square(l_2)) / (2 * l_1 * np.sqrt(np.square(dist_target) + np.square(z_target))) )
+        beta = np.acos( (np.square(l_1) + np.square(l_2) - np.square(dist_target) - np.square(z_target)) / (2 * l_1 * l_2) )
+        gamma = np.atan2(z_target, dist_target)
 
-    gamma = np.atan2(z_target, dist_signed)
+        # 5) Solve for theta_1, theta_2
+        theta_2 = np.rad2deg(-np.pi/2 + (gamma - alpha) - delta)
+        theta_3 = np.rad2deg(np.pi/2 - beta + delta)
+    else:
+        # 4) Solve for theta_2 and theta_3 (side view) using IK from lecture notes
+        alpha = np.acos( (np.square(dist_target) + np.square(z_target) + np.square(l_1) - np.square(l_2)) / (2 * l_1 * np.sqrt(np.square(dist_target) + np.square(z_target))) )
+        beta = np.acos( (np.square(l_1) + np.square(l_2) - np.square(dist_target) - np.square(z_target)) / (2 * l_1 * l_2) )
+        gamma = np.atan2(z_target, dist_target)
 
-    # print(f"alpha: {alpha}\n\talpha_denom: {alpha_denom}\nbeta: {beta}\n\tbeta_denom: {beta_denom}")
-
-    # 5) Determine if we should use lefty or right orientation
-    theta_2 = np.rad2deg(np.pi/2 - (alpha + gamma) - delta)
-    theta_3 = np.rad2deg(np.pi/2 - beta + delta)
+        # 5) Solve for theta_1, theta_2
+        theta_2 = np.rad2deg(np.pi/2 - (alpha + gamma) - delta)
+        theta_3 = np.rad2deg(np.pi/2 - beta + delta)
 
     # 5) Solve for theta_4
     theta_4 = 0
