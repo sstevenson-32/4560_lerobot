@@ -165,6 +165,40 @@ def get_throw_theta_1(target_position):
     return theta_1
 
 # Throwing velocity, velocity in x, y, and z direction
-def get_throwing_velocity(theta_1, starting_pose, throwing_pose, target_block_pos):
-    return [0.1, 0.0, 0.0]
+def get_throwing_velocity(target_block_pos):
+    x = target_block_pos[0]
+    y = target_block_pos[1]
+
+    x_board = x*2.3 + 2.8       # number of blocks time ratio + offset
+    y_board = y*2.3 + 3.1     #same
+    z_board = 12  #in cm
+
+    # offset of checkered board
+    x_offset = 0.35    #edit
+    y_offset = -0.05    
+
+    # convert to grid
+    xf = x_board /100 + x_offset
+    yf = y_board /100 + y_offset
+    zf = z_board /100
+    g = 980/100
+
+    print(xf)
+    print(yf)
+
+    # angle and distance
+    R = np.sqrt(xf**2 + yf**2)
+    angle = np.cos(xf/R) * (180/np.pi)    # is cos in radians or degrees?
+
+    # initial values
+    xi = 0   # set manually/by code
+    yi = 0  # set manually/by code
+    zi = 5 # set manually/by code
+
+    # actual calculation
+    t = np.sqrt((2/g)*(zf-zi))
+    vx_init = (xf - xi)/t
+    vy_init = (yf - yi)/t
+
+    return [vx_init, vy_init, 0.0]
 

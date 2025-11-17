@@ -69,15 +69,20 @@ end_config = {
 'gripper': 50.0
 }
 
+
 # 3) Move to starting pose
 move_to_pose_cubic(bus, starting_config, move_time)
 
-# 4) Get velocity to throw the ball at
-throw_velocity = get_throwing_velocity(theta_1, starting_config, throw_config, desired_obj_position)
+
+# 4) Get target position
+# OPEN CV CALL HERE
+
+# 5) Get throw velocity
+throw_velocity = get_throwing_velocity(desired_obj_position)
 
 
-# 5) Throw the object
-time_to_throw = 1.5
+# 6) Throw the object
+time_to_throw = 3.0
 time_to_stop = 1.0
 throw_obj(bus, theta_1, throw_velocity, throw_config, end_config, time_to_throw, time_to_stop)
 
