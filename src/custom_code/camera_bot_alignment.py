@@ -2,18 +2,18 @@ from so101_utils import load_calibration, move_to_pose_cubic, hold_position, set
 
 
 # CONFIGURATION VARIABLES
-PORT_ID = "COM3"
+PORT_ID = "COM4"
 ROBOT_NAME = "follower-1"
 
 # --- Specified Parameters ---
 
 zero_config = {
-    'shoulder_pan': 143.6043956043956,
-    'shoulder_lift': -97.49450549450549,
-    'elbow_flex': 94.68131868131869,
-    'wrist_flex': -112.26373626373626,
-    'wrist_roll': 59.56043956043956,
-    'gripper': 0
+    'shoulder_pan': -5,
+    'shoulder_lift':-7,
+    'elbow_flex': -100,
+    'wrist_flex': 70,
+    'wrist_roll': 90,
+    'gripper': 10
 }
 
 
