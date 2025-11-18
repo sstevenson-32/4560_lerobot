@@ -101,7 +101,7 @@ def test_basic():
         # print(f"\n==================================================")
 
         # Test new IK
-        if (True):
+        if (False):
             # START POINT
             joint_config = get_end_effector_inverse_kinematics([-0.153, 0, 0.467])
             move_to_pose(m, d, viewer, joint_config, 1.0)
