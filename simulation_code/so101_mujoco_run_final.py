@@ -71,7 +71,7 @@ def test_basic():
             'elbow_flex': -20.00,
             'wrist_flex': 0.0,
             'wrist_roll': 90.0,
-            'gripper': 20.0
+            'gripper': 0.0
         }
 
         end_config = {

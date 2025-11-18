@@ -248,48 +248,52 @@ def place_block_cubic(bus, target_position, move_to_duration):
     return bus
 
 
-def throw_obj(bus, theta_1, throw_velocity, throwing_pose, end_pose, time_to_throw, time_to_stop):
+def throw_obj(bus, throw_velocity, throwing_pose, end_pose, time_to_throw, time_to_stop):
     # Setup timing args
     start_time = time.time()
     starting_pose = bus.sync_read("Present_Position")
 
-    # Solve for trajectory coefficients from start to throw
+    # Solve coefficients to get from p(0) to p(throw), with p_dot(0) = 0, p_dot(throw) = throw_velocity
     start_point, start_rot = get_forward_kinematics(starting_pose)
     throw_point, throw_rot = get_forward_kinematics(throwing_pose)
-    throwing_coeffs = eval_coeff_const_accel(
-        start_point, throw_point, 
-        [0.0, 0.0, 0.0], throw_velocity, 
-        time_to_throw
-    )
-    
-    # Solve for trajectory coefficients from throw to stop
+    throwing_coefficients = eval_coeff_quintic(start_point, throw_point, [0.0, 0.0, 0.0], throw_velocity, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], time_to_throw)
+    print(f"\n==================================================")
+    print(f"start_point: {start_point}\nthrow_point: {throw_point}\nthrow_coeff: {throwing_coefficients}")
+
+    # Solve coefficients to get from p(throw) to p(final), with p_dot(throw) = throw_velocity, p_dot(final) = 0
     end_point, end_rot = get_forward_kinematics(end_pose)
-    stopping_coeffs = eval_coeff_const_accel(
-        throw_point, end_point, 
-        throw_velocity, [0.0, 0.0, 0.0], 
-        time_to_stop
-    )
+    stopping_coefficients = eval_coeff_quintic(throw_point, end_point, throw_velocity, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], time_to_stop)
+    print(f"end_point: {end_point}\nstop_coeff: {stopping_coefficients}")
+    print(f"==================================================\n")
     
     # Move through continuous trajectory
+    positions_dict = starting_pose
     while True:
         t = time.time() - start_time
         if t > time_to_throw + time_to_stop:
             break
 
-        # Determine which phase and calculate target point continuously
-        if t < time_to_throw:
-            # Throwing phase - use throwing coefficients
-            target_point = eval_poly_const_accel(throwing_coeffs, t)
+        # Use different coefficients as needed
+        if t >= time_to_throw:
+            # Use stopping coefficients
+            target_point = eval_poly_quintic(stopping_coefficients, t - time_to_throw)
         else:
-            # Stopping phase - use stopping coefficients
-            phase_time = t - time_to_throw
-            target_point = eval_poly_const_accel(stopping_coeffs, phase_time)
+            # Use throwing coefficients
+            target_point = eval_poly_quintic(throwing_coefficients, t)
+
 
         # Using IK, get target joint pos
-        positions_dict = get_end_effector_inverse_kinematics(target_point)
+        curr_pose = get_end_effector_inverse_kinematics(target_point)
+
+        # Error check IK, if any NAN values stay at current position
+        for key, value in curr_pose.items():
+            if (np.isnan(value) or np.isinf(value)):
+                # If invalid, reset joint to current position
+                curr_pose[key] = positions_dict[key]
+        positions_dict = curr_pose
 
         # Open gripper if near time_to_throw
-        if (t > (time_to_throw / 1.0)):
+        if (t > (time_to_throw + 0.035)):
             positions_dict['wrist_roll'] = 90.0
             positions_dict['gripper'] = 50.0
         else:
@@ -302,92 +306,52 @@ def throw_obj(bus, theta_1, throw_velocity, throwing_pose, end_pose, time_to_thr
         time.sleep(0.02)  # 50 Hz loop
 
 
-# Solve coefficients and time based on initial and final config and velocities
-def eval_coeff(start_point, end_point, start_vel, end_vel, time_period):
-    # convert inputs to numpy float arrays so operations produce float arrays
-    sp = np.array(start_point, dtype=float)
-    ep = np.array(end_point, dtype=float)
-    sv = np.array(start_vel, dtype=float)
-    ev = np.array(end_vel, dtype=float)
+# Solve coefficients for constant acceleration trajectory (quadratic)
+def eval_coeff_quintic(start_point, end_point, start_vel, end_vel, start_accel, end_accel, time_period):
+    """
+    Calculate coefficients for constant acceleration trajectory.
+    Uses kinematic equations: p(t) = p0 + v0*t + 0.5*a*t^2
+    """
+    # convert inputs to numpy float arrays
+    pos_i = np.array(start_point, dtype=float)
+    pos_f = np.array(end_point, dtype=float)
+    vel_i = np.array(start_vel, dtype=float)
+    vel_f = np.array(end_vel, dtype=float)
+    acc_i = np.array(start_accel, dtype=float)
+    acc_f = np.array(end_accel, dtype=float)
+    T = float(time_period)
+    
+    # 1. Calculate coefficients for t^0, t^1, t^2 (Start conditions)
+    a0 = pos_i
+    a1 = vel_i
+    a2 = 0.5 * acc_i
 
-    a0 = sp
-    a1 = sv
-    a2 = (3.0 / (time_period**2)) * (ep - sp) - (2.0 / time_period) * sv - (1.0 / time_period) * ev
-    a3 = (2.0 / (time_period**3)) * (sp - ep) + (1.0 / (time_period**2)) * (sv + ev)
+    # 2. Solve for coefficients for t^3, t^4, t^5 (End conditions)
+    # These are derived from the matrix inversion of the constraints at t=T
+    
+    # Common terms to simplify the calculation
+    T2 = T**2
+    T3 = T**3
+    T4 = T**4
+    T5 = T**5
+    
+    # Position delta
+    h = pos_f - pos_i
+    
+    # These formulas come from solving the linear system Ax = B for the last 3 coeffs
+    a3 = (1 / (2 * T3)) * (20 * h - (8 * vel_f + 12 * vel_i) * T - (3 * acc_f - acc_i) * T2)
+    a4 = (1 / (2 * T4)) * (-30 * h + (14 * vel_f + 16 * vel_i) * T + (3 * acc_f - 2 * acc_i) * T2)
+    a5 = (1 / (2 * T5)) * (12 * h - 6 * (vel_f + vel_i) * T - (acc_f - acc_i) * T2)
 
-    return [a0, a1, a2, a3]
+    return [a0, a1, a2, a3, a4, a5]
 
-def eval_poly(coefficients, t):
+def eval_poly_quintic(coefficients, t):
+    """Evaluate position for constant acceleration: p(t) = a0 + a1*t + a2*t^2"""
     a0 = coefficients[0]
     a1 = coefficients[1]
     a2 = coefficients[2]
     a3 = coefficients[3]
-
-    return a0 + a1*t + a2*t*t + a3*t*t*t
-
-def eval_poly_derivative(coefficients, t):
-    a1 = coefficients[1]
-    a2 = coefficients[2]
-    a3 = coefficients[3]
+    a4 = coefficients[4]
+    a5 = coefficients[5]
     
-    return a1 + 2.0*a2*t + 3.0*a3*t*t
-
-# Solve coefficients for minimum-jerk trajectory (quintic polynomial)
-def eval_coeff_const_accel(start_point, end_point, start_vel, end_vel, time_period):
-    """
-    Calculate coefficients for smooth minimum-jerk trajectory using quintic polynomial.
-    This ensures continuous position, velocity, AND acceleration with zero jerk at endpoints.
-    p(t) = a0 + a1*t + a2*t^2 + a3*t^3 + a4*t^4 + a5*t^5
-    
-    Boundary conditions:
-    p(0) = start_point, p(T) = end_point
-    v(0) = start_vel, v(T) = end_vel  
-    a(0) = 0, a(T) = 0 (smooth start and stop)
-    """
-    # convert inputs to numpy float arrays
-    sp = np.array(start_point, dtype=float)
-    ep = np.array(end_point, dtype=float)
-    sv = np.array(start_vel, dtype=float)
-    ev = np.array(end_vel, dtype=float)
-    T = time_period
-    
-    # Quintic polynomial coefficients (derived from boundary conditions)
-    a0 = sp
-    a1 = sv
-    a2 = np.zeros_like(sp)  # Zero acceleration at start
-    
-    # Solve for a3, a4, a5 using remaining boundary conditions
-    a3 = (20.0*ep - 20.0*sp - (8.0*ev + 12.0*sv)*T) / (2.0*T**3)
-    a4 = (30.0*sp - 30.0*ep + (14.0*ev + 16.0*sv)*T) / (2.0*T**4)
-    a5 = (12.0*ep - 12.0*sp - (6.0*ev + 6.0*sv)*T) / (2.0*T**5)
-    
-    return [a0, a1, a2, a3, a4, a5]
-
-def eval_poly_const_accel(coefficients, t):
-    """Evaluate position for quintic polynomial: p(t) = a0 + a1*t + a2*t^2 + a3*t^3 + a4*t^4 + a5*t^5"""
-    a0, a1, a2, a3, a4, a5 = coefficients
     return a0 + a1*t + a2*t*t + a3*t*t*t + a4*t*t*t*t + a5*t*t*t*t*t
-
-def eval_poly_derivative_const_accel(coefficients, t):
-    """Evaluate velocity for quintic: v(t) = a1 + 2*a2*t + 3*a3*t^2 + 4*a4*t^3 + 5*a5*t^4"""
-    a0, a1, a2, a3, a4, a5 = coefficients
-    return a1 + 2.0*a2*t + 3.0*a3*t*t + 4.0*a4*t*t*t + 5.0*a5*t*t*t*t
-
-def generate_waypoints(start_point, end_point, start_vel, end_vel, time_period, num_waypoints):
-    """Generate waypoints with constant acceleration trajectory"""
-    # Get coefficients for constant acceleration polynomial
-    coeffs = eval_coeff_const_accel(start_point, end_point, start_vel, end_vel, time_period)
-    
-    waypoints = []
-    for i in range(num_waypoints):
-        t = (i / (num_waypoints - 1)) * time_period if num_waypoints > 1 else 0
-        
-        # Position at time t
-        pos = eval_poly_const_accel(coeffs, t)
-        
-        # Velocity at time t (derivative of position polynomial)
-        vel = eval_poly_derivative_const_accel(coeffs, t)
-        
-        waypoints.append((t, pos, vel))
-    
-    return waypoints

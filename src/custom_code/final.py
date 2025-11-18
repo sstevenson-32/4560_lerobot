@@ -43,30 +43,30 @@ hold_position(bus, hold_time)
 theta_1 = get_throw_theta_1(desired_obj_position)
 
 starting_config = {
-'shoulder_pan': theta_1,
-'shoulder_lift': -55.0,
-'elbow_flex': -60.00,
-'wrist_flex': 0.0,
-'wrist_roll': 90.0,
-'gripper': 0
+    'shoulder_pan': theta_1,
+    'shoulder_lift': -80.0,
+    'elbow_flex': -80.00,
+    'wrist_flex': 0.0,
+    'wrist_roll': 90.0,
+    'gripper': 0
 }
 
 throw_config = {
-'shoulder_pan': theta_1,
-'shoulder_lift': -45.0,
-'elbow_flex': -45.00,
-'wrist_flex': 0.0,
-'wrist_roll': 90.0,
-'gripper': 20.0
+    'shoulder_pan': theta_1,
+    'shoulder_lift': -80.0,
+    'elbow_flex': -20.00,
+    'wrist_flex': 0.0,
+    'wrist_roll': 90.0,
+    'gripper': 0.0
 }
 
 end_config = {
-'shoulder_pan': theta_1,
-'shoulder_lift': -45.0,
-'elbow_flex': 0.00,
-'wrist_flex': 0.0,
-'wrist_roll': 90.0,
-'gripper': 50.0
+    'shoulder_pan': theta_1,
+    'shoulder_lift': -60.0,
+    'elbow_flex': 40.00,
+    'wrist_flex': 0.0,
+    'wrist_roll': 90.0,
+    'gripper': 50.0
 }
 
 
@@ -82,9 +82,9 @@ throw_velocity = get_throwing_velocity(desired_obj_position)
 
 
 # 6) Throw the object
-time_to_throw = 3.0
-time_to_stop = 1.0
-throw_obj(bus, theta_1, throw_velocity, throw_config, end_config, time_to_throw, time_to_stop)
+time_to_throw = 1.0
+time_to_stop = 3.0
+throw_obj(bus, throw_velocity, throw_config, end_config, time_to_throw, time_to_stop)
 
 # End at starting config
 move_to_pose_cubic(bus, starting_pose, move_time)
