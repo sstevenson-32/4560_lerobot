@@ -197,8 +197,10 @@ def throw_obj(m, d, viewer, throw_velocity, throwing_pose, end_pose, time_to_thr
         return
 
     # Move to these positions
-    positions = []
+    target_positions = []
+    actual_positions = []
     times = []
+    positions_dict = starting_pose
     while True:
         t = time.time() - start_time
         if t > time_to_throw + time_to_stop:
@@ -212,12 +214,23 @@ def throw_obj(m, d, viewer, throw_velocity, throwing_pose, end_pose, time_to_thr
             # Use throwing coefficients
             target_point = eval_poly_quintic(throwing_coefficients, t)
 
-        positions.append(target_point)
-        times.append(t)
-        # print(f"{t}:\t{target_point}")
 
         # Using IK, get target joint pos
-        positions_dict = get_end_effector_inverse_kinematics(target_point)
+        curr_pose = get_end_effector_inverse_kinematics(target_point)
+        curr_position, _ = get_forward_kinematics(curr_pose)
+
+        # Collect current point data
+        target_positions.append(target_point)
+        actual_positions.append(curr_position)
+        times.append(t)
+        print(f"{t}:\t{target_point} | {curr_position}")
+
+        # Error check IK, if any NAN values stay at current position
+        for key, value in curr_pose.items():
+            if (np.isnan(value) or np.isinf(value)):
+                # If invalid, reset joint to current position
+                curr_pose[key] = positions_dict[key]
+        positions_dict = curr_pose
 
         # Open gripper if near time_to_throw
         if (t >= (time_to_throw / 1.0)):
@@ -234,32 +247,43 @@ def throw_obj(m, d, viewer, throw_velocity, throwing_pose, end_pose, time_to_thr
         # Pick up changes to the physics state, apply perturbations, update options from GUI.
         viewer.sync()
 
+        # time.sleep(0.01)
+
     if (True):
         # Plot the trajectory
         import matplotlib.pyplot as plt
         
-        positions_array = np.array(positions)
+        hide_target = True
+
+        target_positions_array = np.array(target_positions)
+        actual_positions_array = np.array(actual_positions)  # Extract position from (pos, rot) tuple
         times_array = np.array(times)
         
         fig, axes = plt.subplots(3, 1, figsize=(10, 8))
         fig.suptitle('End Effector Trajectory During Throw', fontsize=14, fontweight='bold')
         
         # Plot X position
-        axes[0].plot(times_array, positions_array[:, 0], 'b-', linewidth=2)
+        if (not hide_target):
+            axes[0].plot(times_array, target_positions_array[:, 0], 'b-', linewidth=2, label='Target')
+        axes[0].plot(times_array, actual_positions_array[:, 0], 'b--', linewidth=1.5, alpha=0.7, label='Actual')
         axes[0].axvline(x=time_to_throw, color='r', linestyle='--', label='Release Point')
         axes[0].set_ylabel('X Position (m)', fontsize=12)
         axes[0].grid(True, alpha=0.3)
         axes[0].legend()
         
         # Plot Y position
-        axes[1].plot(times_array, positions_array[:, 1], 'g-', linewidth=2)
+        if (not hide_target):
+            axes[1].plot(times_array, target_positions_array[:, 1], 'g-', linewidth=2, label='Target')
+        axes[1].plot(times_array, actual_positions_array[:, 1], 'g--', linewidth=1.5, alpha=0.7, label='Actual')
         axes[1].axvline(x=time_to_throw, color='r', linestyle='--', label='Release Point')
         axes[1].set_ylabel('Y Position (m)', fontsize=12)
         axes[1].grid(True, alpha=0.3)
         axes[1].legend()
         
         # Plot Z position
-        axes[2].plot(times_array, positions_array[:, 2], 'm-', linewidth=2)
+        if (not hide_target):
+            axes[2].plot(times_array, target_positions_array[:, 2], 'm-', linewidth=2, label='Target')
+        axes[2].plot(times_array, actual_positions_array[:, 2], 'm--', linewidth=1.5, alpha=0.7, label='Actual')
         axes[2].axvline(x=time_to_throw, color='r', linestyle='--', label='Release Point')
         axes[2].set_xlabel('Time (s)', fontsize=12)
         axes[2].set_ylabel('Z Position (m)', fontsize=12)

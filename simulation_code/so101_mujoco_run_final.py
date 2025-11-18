@@ -58,8 +58,8 @@ def test_basic():
         
         starting_config = {
             'shoulder_pan': theta_1,
-            'shoulder_lift': -65.0,
-            'elbow_flex': -60.00,
+            'shoulder_lift': -80.0,
+            'elbow_flex': -80.00,
             'wrist_flex': 0.0,
             'wrist_roll': 90.0,
             'gripper': 0
@@ -67,8 +67,8 @@ def test_basic():
 
         throw_config = {
             'shoulder_pan': theta_1,
-            'shoulder_lift': -45.0,
-            'elbow_flex': -30.00,
+            'shoulder_lift': -80.0,
+            'elbow_flex': -20.00,
             'wrist_flex': 0.0,
             'wrist_roll': 90.0,
             'gripper': 20.0
@@ -76,50 +76,57 @@ def test_basic():
 
         end_config = {
             'shoulder_pan': theta_1,
-            'shoulder_lift': -45.0,
-            'elbow_flex': 0.00,
+            'shoulder_lift': -60.0,
+            'elbow_flex': 40.00,
             'wrist_flex': 0.0,
             'wrist_roll': 90.0,
             'gripper': 50.0
         }
 
-        print(f"========== Static Points ==========\n")
-        move_to_pose(m, d, viewer, starting_config, 1.0)
-        start_point, start_rot = get_forward_kinematics(starting_config)
-        print(f"Starting point: {start_point}")
-        hold_position(m, d, viewer, 2.0)
+        # print(f"========== Static Points ==========\n")
 
-        move_to_pose(m, d, viewer, throw_config, 1.0)
-        throw_point, throw_rot = get_forward_kinematics(throw_config)
-        print(f"Throw point: {throw_point}")
-        hold_position(m, d, viewer, 2.0)
+        # static_move_time = 1.0
 
-        move_to_pose(m, d, viewer, end_config, 1.0)
-        end_point, end_rot = get_forward_kinematics(end_config)
-        print(f"End point: {end_point}")
-        hold_position(m, d, viewer, 2.0)
+        # move_to_pose(m, d, viewer, starting_config, static_move_time)
+        # start_point, start_rot = get_forward_kinematics(starting_config)
+        # print(f"Starting point: {start_point}")
+        # hold_position(m, d, viewer, static_move_time)
 
-        print(f"\n==================================================")
+        # move_to_pose(m, d, viewer, throw_config, static_move_time)
+        # throw_point, throw_rot = get_forward_kinematics(throw_config)
+        # print(f"Throw point: {throw_point}")
+        # hold_position(m, d, viewer, static_move_time)
 
-        # Test new IK
-        if (False):
-            # START POINT
-            joint_config = get_end_effector_inverse_kinematics([-0.153, 0, 0.467])
-            move_to_pose(m, d, viewer, joint_config, 1.0)
-            print(f"TEST: At starting point")
-            hold_position(m, d, viewer, 1.0)
+        # move_to_pose(m, d, viewer, end_config, static_move_time)
+        # end_point, end_rot = get_forward_kinematics(end_config)
+        # print(f"End point: {end_point}")
+        # hold_position(m, d, viewer, static_move_time)
 
-            # THROW POINT
-            joint_config = get_end_effector_inverse_kinematics([0.009, 0, 0.515])
-            move_to_pose(m, d, viewer, joint_config, 1.0)
-            print(f"TEST: At release point")
-            hold_position(m, d, viewer, 1.0)
+        # print(f"\n==================================================")
 
-            # END POINT
-            joint_config = get_end_effector_inverse_kinematics([.221191747, 0,  .427755268])
-            move_to_pose(m, d, viewer, joint_config, 2.0)
-            print(f"TEST: At end point")
-            hold_position(m, d, viewer, 1.0)
+        # print(f"========== Test IK ==========\n")
+        
+        # test_ik_time = 1.0
+
+        # # START POINT
+        # joint_config = get_end_effector_inverse_kinematics([-0.153, 0, 0.435])
+        # move_to_pose(m, d, viewer, joint_config, test_ik_time)
+        # print(f"TEST: At starting point")
+        # hold_position(m, d, viewer, test_ik_time)
+
+        # # THROW POINT
+        # joint_config = get_end_effector_inverse_kinematics([0.009, 0, 0.505])
+        # move_to_pose(m, d, viewer, joint_config, test_ik_time)
+        # print(f"TEST: At release point")
+        # hold_position(m, d, viewer, test_ik_time)
+
+        # # END POINT
+        # joint_config = get_end_effector_inverse_kinematics([0.356, 0, 0.232])
+        # move_to_pose(m, d, viewer, joint_config, test_ik_time)
+        # print(f"TEST: At end point")
+        # hold_position(m, d, viewer, test_ik_time)
+
+        # print(f"\n==================================================")
 
         move_to_pose(m, d, viewer, starting_config, 1.0)    # Reset to starting pos
         hold_position(m, d, viewer, 2.0)
@@ -132,8 +139,8 @@ def test_basic():
 
 
         # 4) Throw the object
-        time_to_throw = 3.0
-        time_to_stop = 2.0
+        time_to_throw = 1.0
+        time_to_stop = 3.0
         throw_obj(m, d, viewer, throw_velocity, throw_config, end_config, time_to_throw, time_to_stop)
 
 
