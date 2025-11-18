@@ -171,24 +171,24 @@ def throw_obj(m, d, viewer, theta_1, throw_velocity, throwing_pose, end_pose, ti
     # Solve coefficients to get from p(0) to p(throw), with p_dot(0) = 0, p_dot(throw) = throw_velocity
     start_point, start_rot = get_forward_kinematics(starting_pose)
     throw_point, throw_rot = get_forward_kinematics(throwing_pose)
-    throwing_coefficients = eval_coeff(start_point, throw_point, [0.0, 0.0, 0.0], throw_velocity, time_to_throw)
+    throwing_coefficients = eval_coeff_const_accel(start_point, throw_point, [0.0, 0.0, 0.0], throw_velocity, time_to_throw)
     print(f"\n==================================================")
     print(f"start_point: {start_point}\nthrow_point: {throw_point}\nthrow_coeff: {throwing_coefficients}")
 
     # Solve coefficients to get from p(throw) to p(final), with p_dot(throw) = throw_velocity, p_dot(final) = 0
     end_point, end_rot = get_forward_kinematics(end_pose)
-    stopping_coefficients = eval_coeff(throw_point, end_point, throw_velocity, [0.0, 0.0, 0.0], time_to_stop)
+    stopping_coefficients = eval_coeff_const_accel(throw_point, end_point, throw_velocity, [0.0, 0.0, 0.0], time_to_stop)
     print(f"end_point: {end_point}\nstop_coeff: {stopping_coefficients}")
     print(f"==================================================\n")
 
     if (False):
-        start_throw = eval_poly(throwing_coefficients, 0.0)
+        start_throw = eval_poly_const_accel(throwing_coefficients, 0.0)
         print(f"Moving to start throw: {start_throw}")
         start_config = get_end_effector_inverse_kinematics(start_throw)
         move_to_pose_cubic(m, d, viewer, None, start_config, 1.0)
         hold_position(m, d, viewer, 2.0)
 
-        release_point = eval_poly(throwing_coefficients, time_to_throw)
+        release_point = eval_poly_const_accel(throwing_coefficients, time_to_throw)
         print(f"Moving to end throw: {release_point}")
         release_config = get_end_effector_inverse_kinematics(release_point)
         move_to_pose_cubic(m, d, viewer, None, release_config, 1.0)
@@ -205,16 +205,16 @@ def throw_obj(m, d, viewer, theta_1, throw_velocity, throwing_pose, end_pose, ti
         # Use different coefficients as needed
         if t >= time_to_throw:
             # Use stopping coefficients
-            target_point = eval_poly(stopping_coefficients, t - time_to_throw)
+            target_point = eval_poly_const_accel(stopping_coefficients, t - time_to_throw)
         else:
             # Use throwing coefficients
-            target_point = eval_poly(throwing_coefficients, t)
+            target_point = eval_poly_const_accel(throwing_coefficients, t)
 
         # Using IK, get target joint pos
         positions_dict = get_end_effector_inverse_kinematics(target_point)
 
         # Open gripper if near time_to_throw
-        if (t >= (time_to_throw / 1.5)):
+        if (t >= (time_to_throw / 1.0)):
             positions_dict['wrist_roll'] = 90.0
             positions_dict['gripper'] = 50.0
         else:
@@ -229,7 +229,7 @@ def throw_obj(m, d, viewer, theta_1, throw_velocity, throwing_pose, end_pose, ti
         viewer.sync()
 
 
-# Solve coefficients and time based on initial and final config and velocities
+# DEPRECATED: Solve coefficients and time based on initial and final config and velocities
 def eval_coeff(start_point, end_point, start_vel, end_vel, time_period):
     # convert inputs to numpy float arrays so operations produce float arrays
     sp = np.array(start_point, dtype=float)
@@ -251,3 +251,53 @@ def eval_poly(coefficients, t):
     a3 = coefficients[3]
 
     return a0 + a1*t + a2*t*t + a3*t*t*t
+
+
+
+# Solve coefficients for constant acceleration trajectory (quadratic)
+def eval_coeff_const_accel(start_point, end_point, start_vel, end_vel, time_period):
+    """
+    Calculate coefficients for constant acceleration trajectory.
+    Uses kinematic equations: p(t) = p0 + v0*t + 0.5*a*t^2
+    """
+    # convert inputs to numpy float arrays
+    sp = np.array(start_point, dtype=float)
+    ep = np.array(end_point, dtype=float)
+    sv = np.array(start_vel, dtype=float)
+    ev = np.array(end_vel, dtype=float)
+    
+    # Calculate constant acceleration needed
+    # Using: vf = v0 + a*t and pf = p0 + v0*t + 0.5*a*t^2
+    accel = (ev - sv) / time_period
+    
+    # Verify trajectory reaches end point (if not, adjust)
+    # pf = p0 + v0*t + 0.5*a*t^2
+    predicted_end = sp + sv * time_period + 0.5 * accel * (time_period ** 2)
+    
+    # If predicted end doesn't match, recalculate acceleration
+    # to satisfy both position and velocity constraints
+    if not np.allclose(predicted_end, ep, rtol=1e-5):
+        # Solve: pf = p0 + v0*t + 0.5*a*t^2 and vf = v0 + a*t
+        # This gives: a = 2*(pf - p0 - v0*t) / t^2
+        accel = 2.0 * (ep - sp - sv * time_period) / (time_period ** 2)
+    
+    a0 = sp
+    a1 = sv
+    a2 = 0.5 * accel
+    
+    return [a0, a1, a2]
+
+def eval_poly_const_accel(coefficients, t):
+    """Evaluate position for constant acceleration: p(t) = a0 + a1*t + a2*t^2"""
+    a0 = coefficients[0]
+    a1 = coefficients[1]
+    a2 = coefficients[2]
+    
+    return a0 + a1*t + a2*t*t
+
+def eval_poly_derivative_const_accel(coefficients, t):
+    """Evaluate velocity for constant acceleration: v(t) = a1 + 2*a2*t"""
+    a1 = coefficients[1]
+    a2 = coefficients[2]
+    
+    return a1 + 2.0*a2*t

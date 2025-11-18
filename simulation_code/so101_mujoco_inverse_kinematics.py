@@ -166,5 +166,5 @@ def get_throw_theta_1(target_position):
 
 # Throwing velocity, velocity in x, y, and z direction
 def get_throwing_velocity(theta_1, starting_pose, throwing_pose, target_block_pos):
-    return [0.1, 0.0, 0.0]
+    return [0.5, 0.0, 0.0]
 
