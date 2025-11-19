@@ -293,9 +293,9 @@ def throw_obj(bus, throw_velocity, throwing_pose, end_pose, time_to_throw, time_
         positions_dict = curr_pose
 
         # Open gripper if near time_to_throw
-        if (t > (time_to_throw + 0.035)):
+        if (t > (time_to_throw + 0.02)):
             positions_dict['wrist_roll'] = 90.0
-            positions_dict['gripper'] = 50.0
+            positions_dict['gripper'] = 75.0
         else:
             positions_dict['wrist_roll'] = 90.0
             positions_dict['gripper'] = 0.0

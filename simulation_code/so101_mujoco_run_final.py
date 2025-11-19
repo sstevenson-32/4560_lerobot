@@ -55,6 +55,8 @@ def test_basic():
 
         # 2) Get to starting throwing position - Use theta to define rotation, all others are pre set
         theta_1 = get_throw_theta_1(desired_obj_position)
+
+        # print(get_end_effector_inverse_kinematics([0.0, 0.0, 0.4]))
         
         starting_config = {
             'shoulder_pan': theta_1,
@@ -68,7 +70,7 @@ def test_basic():
         throw_config = {
             'shoulder_pan': theta_1,
             'shoulder_lift': -80.0,
-            'elbow_flex': -20.00,
+            'elbow_flex': 30.00,
             'wrist_flex': 0.0,
             'wrist_roll': 90.0,
             'gripper': 0.0
@@ -76,8 +78,8 @@ def test_basic():
 
         end_config = {
             'shoulder_pan': theta_1,
-            'shoulder_lift': -60.0,
-            'elbow_flex': 40.00,
+            'shoulder_lift': -80.0,
+            'elbow_flex': 60.00,
             'wrist_flex': 0.0,
             'wrist_roll': 90.0,
             'gripper': 50.0
@@ -139,8 +141,8 @@ def test_basic():
 
 
         # 4) Throw the object
-        time_to_throw = 1.0
-        time_to_stop = 3.0
+        time_to_throw = 1.5
+        time_to_stop = 1.0
         throw_obj(m, d, viewer, throw_velocity, throw_config, end_config, time_to_throw, time_to_stop)
 
 
