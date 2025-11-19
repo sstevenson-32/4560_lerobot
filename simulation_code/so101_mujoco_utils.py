@@ -172,12 +172,14 @@ def throw_obj(m, d, viewer, throw_velocity, throwing_pose, end_pose, time_to_thr
     start_point, start_rot = get_forward_kinematics(starting_pose)
     throw_point, throw_rot = get_forward_kinematics(throwing_pose)
     throwing_coefficients = eval_coeff_quintic(start_point, throw_point, [0.0, 0.0, 0.0], throw_velocity, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], time_to_throw)
+    # throwing_coefficients = eval_coeff(start_point, throw_point, [0.0, 0.0, 0.0], throw_velocity, time_to_throw)
     print(f"\n==================================================")
     print(f"start_point: {start_point}\nthrow_point: {throw_point}\nthrow_coeff: {throwing_coefficients}")
 
     # Solve coefficients to get from p(throw) to p(final), with p_dot(throw) = throw_velocity, p_dot(final) = 0
     end_point, end_rot = get_forward_kinematics(end_pose)
     stopping_coefficients = eval_coeff_quintic(throw_point, end_point, throw_velocity, [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0], time_to_stop)
+    # stopping_coefficients = eval_coeff(throw_point, end_point, throw_velocity, [0.0, 0.0, 0.0], time_to_throw)
     print(f"end_point: {end_point}\nstop_coeff: {stopping_coefficients}")
     print(f"==================================================\n")
 
@@ -210,9 +212,11 @@ def throw_obj(m, d, viewer, throw_velocity, throwing_pose, end_pose, time_to_thr
         if t >= time_to_throw:
             # Use stopping coefficients
             target_point = eval_poly_quintic(stopping_coefficients, t - time_to_throw)
+            # target_point = eval_poly(stopping_coefficients, t - time_to_throw)
         else:
             # Use throwing coefficients
             target_point = eval_poly_quintic(throwing_coefficients, t)
+            # target_point = eval_poly(throwing_coefficients, t)
 
 
         # Using IK, get target joint pos
@@ -253,7 +257,7 @@ def throw_obj(m, d, viewer, throw_velocity, throwing_pose, end_pose, time_to_thr
         # Plot the trajectory
         import matplotlib.pyplot as plt
         
-        hide_target = True
+        hide_target = False
 
         target_positions_array = np.array(target_positions)
         actual_positions_array = np.array(actual_positions)  # Extract position from (pos, rot) tuple
